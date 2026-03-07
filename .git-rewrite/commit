@@ -1,0 +1,6 @@
+tree 954ee83cad99658fbe5383bcbc7cddd84ba6b363
+parent ef8e2febdc5619ee70e8ec9b601b289122e8d0cc
+author Admin <tazrt37@gmail.com> 1772384486 +0000
+committer Admin <tazrt37@gmail.com> 1772384486 +0000
+
+Final fix: Use gemini-2.0-flash for both text and image generation

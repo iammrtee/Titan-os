@@ -1,0 +1,10 @@
+.next
+node_modules
+.vercel
+.git
+.env*.local
+*.log
+tmp
+.vscode
+.idea
+*.ps1

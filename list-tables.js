@@ -1,0 +1,33 @@
+const { createClient } = require('@supabase/supabase-js');
+
+const URL = "https://lvplnbjkflpbzceznxaf.supabase.co";
+const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cGxuYmprZmxwYnpjZXpueGFmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTg2ODc1NywiZXhwIjoyMDg3NDQ0NzU3fQ.0Ic4MG0TKkKkB-jqIqUjhd0ze7Tsyi8XT9Bkmnmsk2Y";
+
+const supabase = createClient(URL, KEY);
+
+async function listTables() {
+    console.log('--- LISTING TABLES ---');
+    const { data, error } = await supabase.rpc('get_tables'); // If a custom RPC exists
+    if (error) {
+        // Fallback: try to query schemas
+        const { data: data2, error: error2 } = await supabase
+            .from('pg_catalog.pg_tables')
+            .select('tablename')
+            .eq('schemaname', 'public');
+
+        if (error2) {
+            console.log('Could not list tables via pg_tables. Trying common names...');
+            const tables = ['campaign_assets', 'content_assets', 'campaigns', 'projects', 'distribution_jobs'];
+            for (const t of tables) {
+                const { count, error: err3 } = await supabase.from(t).select('*', { count: 'exact', head: true });
+                console.log(`Table: ${t} | Count: ${err3 ? 'ERROR (' + err3.message + ')' : count}`);
+            }
+        } else {
+            data2.forEach(t => console.log('Table found:', t.tablename));
+        }
+    } else {
+        console.log('Tables:', data);
+    }
+}
+
+listTables();

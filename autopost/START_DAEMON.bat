@@ -1,0 +1,16 @@
+@echo off
+title TitanOS Autopost Daemon
+echo.
+echo  ████████╗██╗████████╗ █████╗ ███╗   ██╗ ██████╗ ███████╗
+echo  ╚══██╔══╝██║╚══██╔══╝██╔══██╗████╗  ██║██╔═══██╗██╔════╝
+echo     ██║   ██║   ██║   ███████║██╔██╗ ██║██║   ██║███████╗
+echo     ██║   ██║   ██║   ██╔══██║██║╚██╗██║██║   ██║╚════██║
+echo     ██║   ██║   ██║   ██║  ██║██║ ╚████║╚██████╔╝███████║
+echo     ╚═╝   ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝
+echo.
+echo  AUTOPOST DAEMON - Watching for TitanOS distribution jobs...
+echo  Keep this window open while using TitanOS. Press Ctrl+C to stop.
+echo.
+cd /d "%~dp0"
+node daemon.js
+pause
