@@ -109,7 +109,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: geminiContents,
                 config: {
                     responseMimeType: 'application/json',
@@ -168,7 +168,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -216,7 +216,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -325,7 +325,7 @@ Derive ALL colors from this single brand color:
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
