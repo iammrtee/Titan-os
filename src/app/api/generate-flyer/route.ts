@@ -59,33 +59,20 @@ export async function POST(req: NextRequest) {
 - Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
                 : '';
 
-            const templatePrompt = `You are an expert art director. Fill out the visual variables for a premium gradient marketing graphic based on the following content.
+            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a DEEP ANALYSIS of the provided inspiration image and extract its core visual DNA for a high-end marketing flyer.
+            
+            EXTRACT DETAILED VISUAL DATA:
+            1. primary_color_hex: extract accurate hex codes from the image
+            2. secondary_color_hex: extract supporting accent hex codes
+            3. lighting_atmosphere: describe the specific lighting (e.g. "top-down rim lighting with volumetric haze", "warm soft-box studio lighting", "neon-rimmed twilight")
+            4. texture_material: describe the surface qualities (e.g. "frosted refractive glass", "matte obsidian with soft grain", "liquid metallic chrome")
+            5. composition_layout: describe the spatial arrangement (e.g. "centered focal point with asymmetrical floaters", "dynamic diagonal tension", "minimalist grid-aligned")
+            6. artistic_style: 1-sentence summary of the medium and aesthetic (e.g. "ultra-modern 3D glassmorphism with ray-traced reflections")
+            7. primary_3d_object: A stylized 3D object representing the topic: ${contentSource}
+            8. secondary_3d_object: A smaller accent object representing: ${contentSource}
+            9. supporting_statement: A short subheadline for: ${contentSource}
 
-Brand Name: ${projectName || 'The Brand'}
-${contentSource}
-${colorIntelligence}
-${visionIntelligence}
-
-Output a JSON object with EXACTLY these keys:
-{
-    "supporting_statement": "A short subheadline matching the topic",
-    "visual_style": "A detailed description of the artistic medium, lighting, and atmosphere derived from the inspiration (e.g., 'vibrant 3D neon glassmorphism' or 'minimalist flat vector illustration' or 'moody cinematic photography')",
-    "primary_3d_object": "A stylized 3D object representing the topic (e.g. futuristic metallic coin)",
-    "secondary_3d_object": "A smaller accessory 3D object (e.g. cracked glass, rising chart)"
-}
-
-Example values for a Crypto brand where the hook is "They Bought More Crypto But Still Lost Money":
-{
-    "primary_color_name": "dark blue",
-    "accent_color_name": "gold",
-    "headline_line_1": "They Bought More",
-    "headline_line_2": "Crypto",
-    "highlight_word": "Crypto",
-    "supporting_statement": "But Still Lost Money.",
-    "visual_style": "High-end 3D glassmorphism with soft ray-traced reflections and a deep cinematic atmosphere",
-    "primary_3d_object": "futuristic metallic Bitcoin coin",
-    "secondary_3d_object": "cracked dollar bill"
-}`;
+            Output ONLY a JSON object with these EXACT keys.`;
 
             let geminiContents: any = templatePrompt;
 
@@ -121,13 +108,20 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
 
             const vars = JSON.parse(geminiResponse.text || '{}');
 
-            // Hard Overrides: User input beats AI extraction
-            let head1 = cleanValue(vars.headline_line_1);
-            let head2 = cleanValue(vars.headline_line_2);
-            let sub = cleanValue(vars.supporting_statement);
-            let obj1 = cleanValue(vars.primary_3d_object);
-            let obj2 = cleanValue(vars.secondary_3d_object);
+            // Extraction with fallbacks
+            let head1 = cleanValue(vars.headline_line_1 || vars.headline_text || '');
+            let head2 = cleanValue(vars.headline_line_2 || '');
+            let sub = cleanValue(vars.supporting_statement || '');
+            let obj1 = cleanValue(vars.primary_3d_object || '');
+            let obj2 = cleanValue(vars.secondary_3d_object || '');
             let logo = cleanValue(projectName || 'The Brand');
+
+            // Deep Visual DNA
+            const activeColor = color || vars.primary_color_hex || vars.primary_color_name || 'deep purple';
+            const lighting = cleanValue(vars.lighting_atmosphere || 'professional studio lighting');
+            const materials = cleanValue(vars.texture_material || 'premium surfaces');
+            const composition = cleanValue(vars.composition_layout || 'modern balanced layout');
+            const styleLabel = cleanValue(vars.artistic_style || 'modern marketing aesthetic');
 
             if (headlineText) {
                 const lines = headlineText.split('\n').map((l: string) => l.trim()).filter(Boolean);
@@ -143,11 +137,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
                 sub = customContent.trim().split('\n')[0];
             }
 
-            const activeColor = color || vars.primary_color_name || 'deep purple';
-            const activeAccent = vars.accent_color_name || 'vivid';
-            const derivedStyle = vars.visual_style || `premium ${activeColor} gradient glassmorphism with soft-noise texture and ray-traced reflections`;
-
-            finalPrompt = `An ultra-HD marketing graphic with a ${derivedStyle} background using a ${activeColor} color palette. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font saying '${head1}'. ${head2 ? `Below it, the word '${head2}' is elegantly inside a glowing ${activeAccent} 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
+            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}. Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
