@@ -136,7 +136,12 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }
             if (primaryObject) obj1 = primaryObject.trim();
             if (logoText) logo = logoText.trim();
-            if (footerText) sub = footerText.trim();
+            if (footerText) {
+                sub = footerText.trim();
+            } else if (headlineText && customContent) {
+                // If headline is manual, map customContent to the supporting statement banner
+                sub = customContent.trim().split('\n')[0];
+            }
 
             const activeColor = color || vars.primary_color_name || 'deep purple';
             const activeAccent = vars.accent_color_name || 'vivid';
@@ -186,7 +191,11 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
 
             if (headlineText) headline = headlineText.toUpperCase();
             if (labelText) labelTextVal = labelText.toUpperCase();
-            if (footerText) tagline = footerText;
+            if (footerText) {
+                tagline = footerText;
+            } else if (headlineText && customContent) {
+                tagline = customContent.trim().split('\n')[0];
+            }
             if (logoText) logo = logoText;
             if (primaryObject) obj = primaryObject;
 
@@ -271,7 +280,12 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }
             if (ctaButtonText) cta = ctaButtonText.trim();
             if (logoText) logo = logoText.trim();
-            if (bottomLeftText) botLeft = bottomLeftText.trim();
+            if (bottomLeftText) {
+                botLeft = bottomLeftText.trim();
+            } else if (headlineText && customContent) {
+                // If headline is manual, use customContent for bottom sub-text
+                botLeft = customContent.trim().split('\n')[0];
+            }
             if (characterGender) gen = characterGender.trim();
             if (characterEthnicity) eth = characterEthnicity.trim();
             if (hairStyle) hair = hairStyle.trim();
@@ -356,7 +370,7 @@ Derive ALL colors from this single brand color:
             let label = cleanValue(vars.label);
             let h1 = cleanValue(vars.h1);
             let h2 = cleanValue(vars.h2);
-            const sub = cleanValue(vars.sub);
+            let sub = cleanValue(vars.sub);
 
             let gen = cleanValue(vars.CHARACTER_GENDER);
             let eth = cleanValue(vars.CHARACTER_ETHNICITY);
@@ -370,8 +384,12 @@ Derive ALL colors from this single brand color:
             const footer = cleanValue(vars.FOOTER_TEXT);
 
             // Hard overrides: user input ALWAYS beats AI extraction — no exceptions
-            if (headlineText) { h1 = headlineText.trim(); h2 = ''; }
-            else if (customContent) {
+            if (headlineText) {
+                h1 = headlineText.trim();
+                h2 = '';
+                // If headline is manual, map customContent to subtext
+                if (customContent) sub = customContent.trim().split('\n')[0];
+            } else if (customContent) {
                 // User's typed idea text goes directly on the flyer — no AI rewriting
                 const lines = customContent.trim().split('\n').map((l: string) => l.trim()).filter(Boolean);
                 h1 = lines[0] || h1;
