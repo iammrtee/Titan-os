@@ -369,6 +369,8 @@ function ContentTab({
     const [customGenerating, setCustomGenerating] = useState(false);
     const [customFlyerUrl, setCustomFlyerUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
+    const [referenceUploading, setReferenceUploading] = useState(false);
 
     // ── Campaign & Asset State ──
     const [isAddingToCampaign, setIsAddingToCampaign] = useState(false);
@@ -528,6 +530,55 @@ function ContentTab({
         }
     };
 
+    const handleReferenceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !projectId) return;
+
+        const targetId = selectedCampaignId;
+        if (!targetId) {
+            alert('Please select or create a campaign first before providing a reference image.');
+            setShowCampaignSelector(true);
+            return;
+        }
+
+        setReferenceUploading(true);
+        try {
+            // STEP 1: Get presigned upload URL (reuse existing API)
+            const urlRes = await fetch('/api/assets/get-upload-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileName: `ref_${file.name}`,
+                    fileType: file.type,
+                    campaignId: targetId
+                })
+            });
+            const urlData = await urlRes.json();
+
+            if (!urlData.success) throw new Error(urlData.error || 'Failed to get upload URL');
+
+            // STEP 2: Upload file directly to Supabase Storage
+            const uploadRes = await fetch(urlData.signedUrl, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': urlData.contentType }
+            });
+
+            if (!uploadRes.ok) throw new Error(`Reference upload failed: ${uploadRes.statusText}`);
+
+            // STEP 3: Instead of full record, just get the public URL to use in generation
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const publicUrl = `${supabaseUrl}/storage/v1/object/public/titanleap-assets-v1/${urlData.filePath}`;
+
+            setReferenceImageUrl(publicUrl);
+        } catch (err: any) {
+            console.error(err);
+            alert(`Reference upload error: ${err.message}`);
+        } finally {
+            setReferenceUploading(false);
+        }
+    };
+
     const handleGenerateCustomFlyer = async () => {
         if (!customContent.trim()) return;
         setCustomGenerating(true);
@@ -541,6 +592,7 @@ function ContentTab({
                     style: selectedStyle,
                     color: customColor || undefined,
                     customContent: customContent,
+                    referenceImageUrl: referenceImageUrl || undefined,
                     characterGender: characterGender || undefined,
                     characterEthnicity: characterEthnicity || undefined,
                     hairStyle: hairStyle || undefined,
@@ -757,6 +809,48 @@ function ContentTab({
                             style={{ minHeight: 90, resize: 'vertical', width: '100%', boxSizing: 'border-box', borderRadius: 10, fontSize: 13, lineHeight: 1.6 }}
                         />
                     </div>
+
+                    {/* Reference Image Input */}
+                    {selectedStyle === 'style-1' && (
+                        <div style={{ marginBottom: 20 }}>
+                            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 12 }}>
+                                Reference Visual Inspiration (Optional)
+                            </label>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 16,
+                                padding: 16,
+                                background: 'var(--bg-secondary)',
+                                borderRadius: 12,
+                                border: '1px dashed var(--border)'
+                            }}>
+                                <label className="btn btn-secondary" style={{
+                                    cursor: 'pointer',
+                                    fontSize: 12,
+                                    padding: '8px 16px',
+                                    background: referenceImageUrl ? 'var(--success-subtle)' : 'var(--bg-primary)',
+                                    color: referenceImageUrl ? 'var(--success)' : 'var(--text-primary)',
+                                    border: referenceImageUrl ? '1px solid var(--success)' : '1px solid var(--border)'
+                                }}>
+                                    {referenceUploading ? 'Uploading...' : referenceImageUrl ? '✓ Image Provided' : '📸 Upload Inspiration'}
+                                    <input type="file" hidden accept="image/*" onChange={handleReferenceImageUpload} disabled={referenceUploading} />
+                                </label>
+                                {referenceImageUrl && (
+                                    <div style={{ position: 'relative', height: 40, width: 40, borderRadius: 6, overflow: 'hidden' }}>
+                                        <img src={referenceImageUrl} style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
+                                        <button
+                                            onClick={() => setReferenceImageUrl(null)}
+                                            style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', cursor: 'pointer', padding: 2, fontSize: 8 }}
+                                        >✕</button>
+                                    </div>
+                                )}
+                                <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
+                                    {referenceImageUrl ? 'Flyer will look familiar to this image' : 'Upload an image and Flyer 1 will match its colors & style.'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Color + Character Fields */}
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>

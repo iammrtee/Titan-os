@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
             topic, core_message, hook, projectName, style, color, customContent,
             characterGender, characterEthnicity, hairStyle, outfitDescription,
             facialExpression, poseDescription, primaryObject, ctaButtonText,
-            logoText, bottomLeftText, footerText, labelText, headlineText
+            logoText, bottomLeftText, footerText, labelText, headlineText,
+            referenceImageUrl
         } = body;
 
         console.log(`[FlyerGen] Starting generation for style: ${style}, project: ${projectName}`);
@@ -51,11 +52,19 @@ export async function POST(req: NextRequest) {
 - pill_color: The bright vivid neon version of the brand color used for the headline keyword pill shape`
                 : `No brand color specified — choose a professional color palette befitting the content topic.`;
 
+            const visionIntelligence = referenceImageUrl
+                ? `The user has provided a reference image for visual inspiration.
+- You MUST analyze the reference image's color palette, atmosphere, lighting, and composition.
+- Derive the primary colors and visual "vibe" primarily from this reference image.
+- Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
+                : '';
+
             const templatePrompt = `You are an expert art director. Fill out the visual variables for a premium gradient marketing graphic based on the following content.
 
 Brand Name: ${projectName || 'The Brand'}
 ${contentSource}
 ${colorIntelligence}
+${visionIntelligence}
 
 Output a JSON object with EXACTLY these keys:
 {
@@ -81,9 +90,28 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
     "secondary_3d_object": "cracked dollar bill"
 }`;
 
+            let geminiContents: any = templatePrompt;
+
+            if (referenceImageUrl) {
+                try {
+                    const imgRes = await fetch(referenceImageUrl);
+                    const buffer = await imgRes.arrayBuffer();
+                    const b64 = Buffer.from(buffer).toString('base64');
+                    const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+
+                    geminiContents = [
+                        { text: templatePrompt },
+                        { inlineData: { data: b64, mimeType: mime } }
+                    ];
+                } catch (err) {
+                    console.error("Failed to fetch reference image:", err);
+                    // Fallback to text-only if image fetch fails
+                }
+            }
+
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: templatePrompt,
+                model: 'gemini-2.0-flash',
+                contents: geminiContents,
                 config: {
                     responseMimeType: 'application/json',
                     temperature: 0.7,
@@ -118,7 +146,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.0-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -166,7 +194,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.0-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -275,7 +303,7 @@ Derive ALL colors from this single brand color:
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.0-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -355,7 +383,7 @@ Derive ALL colors from this single brand color:
                 // gemini-3.1-flash-image-preview is the correct model for image generation
                 // Must use generateContent (NOT generateImages which hits the Imagen predict endpoint)
                 const imgResponse = await ai.models.generateContent({
-                    model: 'gemini-3.1-flash-image-preview',
+                    model: 'gemini-2.0-flash',
                     contents: `${finalPrompt} Aspect ratio: ${activeAspectRatio}.`,
                 });
 
