@@ -68,12 +68,8 @@ ${visionIntelligence}
 
 Output a JSON object with EXACTLY these keys:
 {
-    "primary_color_name": "${color ? color : 'e.g. deep purple'}",
-    "accent_color_name": "e.g. neon yellow",
-    "headline_line_1": "First part of the hook (short)",
-    "headline_line_2": "Second part of the hook",
-    "highlight_word": "One word from headline_line_2 to emphasize",
     "supporting_statement": "A short subheadline matching the topic",
+    "visual_style": "A detailed description of the artistic medium, lighting, and atmosphere derived from the inspiration (e.g., 'vibrant 3D neon glassmorphism' or 'minimalist flat vector illustration' or 'moody cinematic photography')",
     "primary_3d_object": "A stylized 3D object representing the topic (e.g. futuristic metallic coin)",
     "secondary_3d_object": "A smaller accessory 3D object (e.g. cracked glass, rising chart)"
 }
@@ -86,6 +82,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
     "headline_line_2": "Crypto",
     "highlight_word": "Crypto",
     "supporting_statement": "But Still Lost Money.",
+    "visual_style": "High-end 3D glassmorphism with soft ray-traced reflections and a deep cinematic atmosphere",
     "primary_3d_object": "futuristic metallic Bitcoin coin",
     "secondary_3d_object": "cracked dollar bill"
 }`;
@@ -142,8 +139,9 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             if (logoText) logo = logoText.trim();
             if (footerText) sub = footerText.trim(); // For Style 1, footerText maps to supporting statement or we can use bottom text
 
-            // Set final Prompt with high-fidelity Flow/Nano aesthetic
-            finalPrompt = `An ultra-HD 3D marketing graphic with a luxurious ${vars.primary_color_name || color || 'dark'} gradient glassmorphism background featuring soft-noise texture and ray-traced reflections. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font saying '${head1}'. ${head2 ? `Below it, the word '${head2}' is elegantly inside a glowing ${vars.accent_color_name} 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated cinematic studio lighting, sharp caustics, premium 3D advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
+            // Set final Prompt with high-fidelity adaptive aesthetic
+            const derivedStyle = vars.visual_style || 'luxurious 3D gradient glassmorphism with soft-noise texture and ray-traced reflections';
+            finalPrompt = `An ultra-HD marketing graphic with a ${derivedStyle} background. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font saying '${head1}'. ${head2 ? `Below it, the word '${head2}' is elegantly inside a glowing ${vars.accent_color_name || 'vivid'} 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -400,13 +398,33 @@ Derive ALL colors from this single brand color:
         let attempts = 0;
         const maxAttempts = 2;
 
+        // Prepare contents for generation
+        let generationContents: any = `${finalPrompt} Aspect ratio: ${activeAspectRatio}.`;
+
+        // If a reference image is provided, pass it to the generation model for grounding
+        if (referenceImageUrl) {
+            try {
+                const imgRes = await fetch(referenceImageUrl);
+                const buffer = await imgRes.arrayBuffer();
+                const b64 = Buffer.from(buffer).toString('base64');
+                const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+
+                generationContents = [
+                    { text: generationContents },
+                    { inlineData: { data: b64, mimeType: mime } }
+                ];
+            } catch (err) {
+                console.error("[FlyerGen] Failed to fetch reference image for generation grounding:", err);
+            }
+        }
+
         while (attempts < maxAttempts) {
             try {
                 // gemini-3.1-flash-image-preview is the correct model for image generation
                 // Must use generateContent (NOT generateImages which hits the Imagen predict endpoint)
                 const imgResponse = await ai.models.generateContent({
                     model: 'gemini-3.1-flash-image-preview',
-                    contents: `${finalPrompt} Aspect ratio: ${activeAspectRatio}.`,
+                    contents: generationContents,
                 });
 
                 // Extract the image part from the response
