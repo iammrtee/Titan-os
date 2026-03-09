@@ -30,22 +30,31 @@ export async function DELETE(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // 2. Extract storage path from URL
-        // URL format: https://[project].supabase.co/storage/v1/object/public/campaign-assets/[path]
-        const urlParts = asset.asset_url.split('/campaign-assets/');
-        if (urlParts.length > 1) {
-            const storagePath = urlParts[1];
+        // 2. Extract storage path and bucket from URL
+        // URL format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+        const bucketMatch = asset.asset_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
+
+        if (bucketMatch) {
+            const bucketName = bucketMatch[1];
+            const storagePath = bucketMatch[2];
+
+            console.log(`Deleting from bucket ${bucketName}: ${storagePath}`);
 
             // Delete from Supabase Storage
             const { error: storageError } = await supabase
                 .storage
-                .from('campaign-assets')
+                .from(bucketName)
                 .remove([storagePath]);
 
             if (storageError) {
                 console.error('Storage deletion error:', storageError);
-                // We proceed to delete from DB even if cloud storage fails, 
-                // but ideally we'd log this for manual cleanup.
+            }
+        } else {
+            // Fallback for older formats or direct paths
+            const urlParts = asset.asset_url.split('/campaign-assets/');
+            if (urlParts.length > 1) {
+                const storagePath = urlParts[1];
+                await supabase.storage.from('campaign-assets').remove([storagePath]);
             }
         }
 

@@ -16,26 +16,34 @@ export async function POST(req: NextRequest) {
             assetType = 'video';
         }
 
-        if (!fileName || !campaignId) {
-            return NextResponse.json({ error: 'Missing fileName or campaignId' }, { status: 400 });
+        if (!fileName) {
+            return NextResponse.json({ error: 'Missing fileName' }, { status: 400 });
+        }
+        if (!campaignId) {
+            return NextResponse.json({ error: 'Missing campaignId' }, { status: 400 });
         }
 
         const admin = createAdminClient();
 
-        // Ensure bucket exists
+        const BUCKET_NAME = 'titanleap-assets-v1';
         const { data: buckets } = await admin.storage.listBuckets();
-        const bucketExists = buckets?.some(b => b.name === 'campaign-assets');
+        const bucketExists = buckets?.some(b => b.name === BUCKET_NAME);
         if (!bucketExists) {
-            await admin.storage.createBucket('campaign-assets', { public: true });
+            const { error: bucketError } = await admin.storage.createBucket(BUCKET_NAME, {
+                public: true,
+                allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
+                fileSizeLimit: 104857600 // 100MB
+            });
+            // Optionally handle bucketError here if creation fails
         }
 
         const fileExt = fileName.split('.').pop() || 'jpg';
         const uniqueName = `${campaignId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `assets/${uniqueName}`;
 
-        const contentType = assetType === 'video' ? 'image/png' : fileType;
+        const contentType = fileType;
 
-        const { data, error } = await admin.storage.from('campaign-assets').createSignedUploadUrl(filePath);
+        const { data, error } = await admin.storage.from(BUCKET_NAME).createSignedUploadUrl(filePath);
 
         if (error) {
             console.error('Signed URL error:', error);

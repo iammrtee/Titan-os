@@ -10,16 +10,20 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { filePath, campaignId, assetType, metadata } = body;
 
-        if (!filePath || !campaignId) {
-            return NextResponse.json({ error: 'Missing filePath or campaignId' }, { status: 400 });
+        if (!filePath) {
+            return NextResponse.json({ error: 'Missing filePath' }, { status: 400 });
+        }
+        if (!campaignId) {
+            return NextResponse.json({ error: 'Missing campaignId' }, { status: 400 });
         }
 
         const admin = createAdminClient();
 
         // Get Public URL
+        const BUCKET_NAME = 'titanleap-assets-v1';
         const { data: { publicUrl } } = admin
             .storage
-            .from('campaign-assets')
+            .from(BUCKET_NAME)
             .getPublicUrl(filePath);
 
         // Create Asset Record (use user client so RLS applies correctly)

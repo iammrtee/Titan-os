@@ -65,6 +65,10 @@ export default function CampaignDetailPage() {
     const handleUploadAsset = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        if (!id) {
+            showToast('Sync Error', 'error', 'Campaign ID not found. Please refresh and try again.');
+            return;
+        }
 
         setUploading(true);
         showToast('Uploading engine...', 'info', 'Analyzing and optimizing asset for TitanLeap standards');
@@ -95,7 +99,9 @@ export default function CampaignDetailPage() {
             });
 
             if (!uploadRes.ok) {
-                throw new Error(`Storage upload failed with status ${uploadRes.status}`);
+                const errorBody = await uploadRes.text();
+                console.error('Storage upload error body:', errorBody);
+                throw new Error(`Storage upload failed: ${errorBody || uploadRes.statusText}`);
             }
 
             // STEP 3: Create database record

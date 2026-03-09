@@ -25,10 +25,15 @@ export async function POST(req: NextRequest) {
 
         // 1. Ensure the storage bucket exists (admin client bypasses RLS)
         const admin = createAdminClient();
+        const BUCKET_NAME = 'titanleap-assets-v1';
         const { data: buckets } = await admin.storage.listBuckets();
-        const bucketExists = buckets?.some(b => b.name === 'campaign-assets');
+        const bucketExists = buckets?.some(b => b.name === BUCKET_NAME);
         if (!bucketExists) {
-            const { error: bucketError } = await admin.storage.createBucket('campaign-assets', { public: true });
+            const { error: bucketError } = await admin.storage.createBucket(BUCKET_NAME, {
+                public: true,
+                allowedMimeTypes: ['image/*', 'video/*', 'application/pdf'],
+                fileSizeLimit: 104857600 // 100MB
+            });
             if (bucketError) {
                 console.error('Bucket creation error:', bucketError);
                 return NextResponse.json({ error: `Storage setup failed: ${bucketError.message}` }, { status: 500 });
@@ -40,16 +45,15 @@ export async function POST(req: NextRequest) {
         const fileName = `${campaignId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `assets/${fileName}`;
 
-        // Bypassing strict MIME restrictions for videos by spoofing type in storage
         const storageOptions = {
-            contentType: assetType === 'video' ? 'image/png' : file.type,
+            contentType: file.type,
             upsert: false
         };
 
         const arrayBuffer = await file.arrayBuffer();
         const { error: uploadError } = await admin
             .storage
-            .from('campaign-assets')
+            .from(BUCKET_NAME)
             .upload(filePath, arrayBuffer, storageOptions);
 
         if (uploadError) {
@@ -60,7 +64,7 @@ export async function POST(req: NextRequest) {
         // 3. Get Public URL
         const { data: { publicUrl } } = admin
             .storage
-            .from('campaign-assets')
+            .from(BUCKET_NAME)
             .getPublicUrl(filePath);
 
         // 4. Create Asset Record (use user client so RLS applies correctly)

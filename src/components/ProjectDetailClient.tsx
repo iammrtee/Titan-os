@@ -402,6 +402,7 @@ function ContentTab({
     const handleAddToCampaign = async (overrideId?: string) => {
         const targetId = overrideId || selectedCampaignId;
         if (!targetId && campaigns.length > 0) {
+            alert('Please select a campaign from the dropdown first.');
             setShowCampaignSelector(true);
             return;
         }
@@ -412,6 +413,11 @@ function ContentTab({
 
         setIsAddingToCampaign(true);
         setAssetAdded(false);
+        if (!customFlyerUrl) {
+            alert('No flyer URL found to add.');
+            setIsAddingToCampaign(false);
+            return;
+        }
         try {
             const res = await fetch('/api/campaigns/assets', {
                 method: 'POST',
@@ -484,7 +490,9 @@ function ContentTab({
             });
 
             if (!uploadRes.ok) {
-                throw new Error(`Storage upload failed with status ${uploadRes.status}`);
+                const errorBody = await uploadRes.text();
+                console.error('Storage upload error body:', errorBody);
+                throw new Error(`Storage upload failed: ${errorBody || uploadRes.statusText}`);
             }
 
             // STEP 3: Create database record

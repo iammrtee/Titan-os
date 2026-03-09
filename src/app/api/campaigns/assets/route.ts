@@ -9,8 +9,11 @@ export async function POST(req: NextRequest) {
 
         const { campaignId, assetType, assetUrl, metadata } = await req.json();
 
-        if (!campaignId || !assetUrl) {
-            return NextResponse.json({ error: 'campaignId and assetUrl are required' }, { status: 400 });
+        if (!campaignId) {
+            return NextResponse.json({ error: 'campaignId is required' }, { status: 400 });
+        }
+        if (!assetUrl) {
+            return NextResponse.json({ error: 'assetUrl is required' }, { status: 400 });
         }
 
         const { data, error } = await supabase
