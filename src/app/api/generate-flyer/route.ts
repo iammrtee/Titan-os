@@ -119,6 +119,8 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
                 return s.replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
             };
 
+            const vars = JSON.parse(geminiResponse.text || '{}');
+
             // Hard Overrides: User input beats AI extraction
             let head1 = cleanValue(vars.headline_line_1);
             let head2 = cleanValue(vars.headline_line_2);
