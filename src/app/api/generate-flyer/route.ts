@@ -59,18 +59,21 @@ export async function POST(req: NextRequest) {
 - Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
                 : '';
 
-            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a DEEP ANALYSIS of the provided inspiration image and extract its core visual DNA for a high-end marketing flyer.
+            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a DEEP ANALYSIS of BOTH the provided inspiration image and the content idea text to extract its core visual and conceptual DNA.
             
-            EXTRACT DETAILED VISUAL DATA:
-            1. primary_color_hex: extract accurate hex codes from the image
+            EXTRACT DETAILED VISUAL & CONCEPTUAL DATA:
+            1. primary_color_hex: extract accurate hex codes from the image/content
             2. secondary_color_hex: extract supporting accent hex codes
-            3. lighting_atmosphere: describe the specific lighting (e.g. "top-down rim lighting with volumetric haze", "warm soft-box studio lighting", "neon-rimmed twilight")
-            4. texture_material: describe the surface qualities (e.g. "frosted refractive glass", "matte obsidian with soft grain", "liquid metallic chrome")
-            5. composition_layout: describe the spatial arrangement (e.g. "centered focal point with asymmetrical floaters", "dynamic diagonal tension", "minimalist grid-aligned")
-            6. artistic_style: 1-sentence summary of the medium and aesthetic (e.g. "ultra-modern 3D glassmorphism with ray-traced reflections")
-            7. primary_3d_object: A stylized 3D object representing the topic: ${contentSource}
-            8. secondary_3d_object: A smaller accent object representing: ${contentSource}
-            9. supporting_statement: A short subheadline for: ${contentSource}
+            3. lighting_atmosphere: describe the specific lighting and mood (e.g. "cinematic rim lighting", "soft pastel morning glow")
+            4. texture_material: describe surface qualities (e.g. "frosted refractive glass", "matte obsidian")
+            5. composition_layout: describe spatial arrangement (e.g. "dynamic diagonal tension")
+            6. artistic_style: 1-sentence summary of the medium and aesthetic
+            7. conceptual_anchor: The main visual metaphor derived from analyzing the content idea: ${contentSource}
+            8. primary_3d_object: A stylized 3D object physically representing the anchor: ${contentSource}
+            9. secondary_3d_object: A smaller accent object reinforcing the theme
+            10. headline_line_1: Most impactful part of the text
+            11. headline_line_2: Supporting part of the headline
+            12. supporting_statement: A short subheadline for the footer area
 
             Output ONLY a JSON object with these EXACT keys.`;
 
@@ -114,6 +117,7 @@ export async function POST(req: NextRequest) {
             let sub = cleanValue(vars.supporting_statement || '');
             let obj1 = cleanValue(vars.primary_3d_object || '');
             let obj2 = cleanValue(vars.secondary_3d_object || '');
+            const anchor = cleanValue(vars.conceptual_anchor || '');
             let logo = cleanValue(projectName || 'The Brand');
 
             // Deep Visual DNA
@@ -137,7 +141,7 @@ export async function POST(req: NextRequest) {
                 sub = customContent.trim().split('\n')[0];
             }
 
-            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}. Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
+            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}, visually representing the core idea. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -146,19 +150,18 @@ export async function POST(req: NextRequest) {
                 ? `Custom Content: ${customContent}`
                 : `Post Topic: ${topic}\nHeadline Hook: ${hook}`;
 
-            const templatePrompt = `You are a world-class luxury art director for a high-end tech brand (Titan Elite). Your aesthetic is "Obsidian & Chrome" — dark, expensive, and minimalist.
+            const templatePrompt = `You are a world-class luxury art director. Perform a DEEP CONCEPTUAL ANALYSIS of the content to extract a sophisticated visual metaphor for a "Titan Elite" luxury brand.
             
-            EXTRACT VISUAL DATA FOR:
             PROJECT: ${projectName || 'The Brand'}
             CONTENT: ${contentSource}
             
             Output JSON:
             {
-              "SERIF_HEADLINE": "massive elegant serif headline (upper case)",
-              "MONO_LABEL": "top sub-label in monospace (e.g. SYSTEM_ACTIVE)",
+              "SERIF_HEADLINE": "massive elegant serif headline (max 3 words)",
+              "CONCEPTUAL_THEME": "a sophisticated visual metaphor (e.g. 'the weight of legacy', 'orbital precision')",
               "ACCENT_METAL": "gold, silver, bronze, or copper",
-              "CORE_OBJECT": "abstract luxury 3D object (e.g. floating basalt monolith, liquid chrome sphere)",
-              "TAGLINE": "one refined sentence of copy"
+              "CORE_OBJECT": "A high-end 3D object representing the metahpor (e.g. floating platinum cube, obsidian orb)",
+              "TAGLINE": "one refined sentence of copy summarizing the idea"
             }`;
 
             const geminiResponse = await ai.models.generateContent({
@@ -189,7 +192,7 @@ export async function POST(req: NextRequest) {
             if (logoText) logo = logoText;
             if (primaryObject) obj = primaryObject;
 
-            finalPrompt = `A high-end luxury editorial poster with a deep matte ${activeColor} background. The typography is massive, elegant, high-contrast white serif font (like Didot or Bodoni) reading "${headline}". At the top, a small monospace technical label "${labelTextVal}". Centered is a stunning, hyper-realistic 3D ${obj} with brushed metallic accents and liquid textures. The lighting is cinematic low-key with sharp rim highlights and soft volumetrics. The bottom features a minimal white tagline "${tagline}". Executive aesthetic, premium tech luxury, 8k resolution, perfectly clean composition. Brand: ${logo}.`;
+            finalPrompt = `A high-end luxury editorial poster themed around "${vars.CONCEPTUAL_THEME || 'elite excellence'}". The background is a deep matte ${activeColor}. Typography is massive, elegant, high-contrast white serif font reading "${headline}". Small monospace label "${vars.MONO_LABEL || 'TITAN_ELITE'}". Centered is a stunning, hyper-realistic 3D ${obj} with ${vars.ACCENT_METAL || 'platinum'} accents. The lighting is cinematic low-key with sharp rim highlights. Bottom features a minimal white tagline "${tagline}". Brand: ${logo}.`;
 
             console.log("Style 4 Titan Elite Created:", finalPrompt);
         } else if (style === 'style-2') {
@@ -198,8 +201,7 @@ export async function POST(req: NextRequest) {
                 ? `Custom Content: ${customContent}`
                 : `Post Topic: ${topic}\nHeadline Hook: ${hook}`;
 
-            const templatePrompt = `You are a high-end 3D illustrator specializing in "Corporate Memphis" startup aesthetics. 
-            Extraction task for a structured 3D poster.
+            const templatePrompt = `You are a high-end 3D illustrator. Perform a DEEP ANALYSIS of the content to find its "human core" and "visual hook" for a modern startup poster.
             
             PROJECT: ${projectName || 'The Brand'}
             DETAILS: ${contentSource}
@@ -207,6 +209,7 @@ export async function POST(req: NextRequest) {
 
             Output ONLY a JSON object:
             {
+              "CONCEPTUAL_HOOK": "the core human value or action mentioned in the text",
               "HEADLINE_TEXT": "catchy massive headline",
               "CHARACTER_GENDER": "${characterGender || 'male/female/non-binary'}",
               "CHARACTER_ETHNICITY": "${characterEthnicity || 'any'}",
@@ -284,7 +287,7 @@ export async function POST(req: NextRequest) {
             if (poseDescription) pose = poseDescription.trim();
             if (primaryObject) obj = primaryObject.trim();
 
-            finalPrompt = `A high-quality 3D digital illustration in Corporate Memphis startup style. Background is a smooth gradient using ${color || bg1} and ${bg2} with subtle grain texture. Large bold typography reads '${head}'. A ${eth}-skinned ${gen} with ${hair} hair, wearing ${outfit}, is ${pose} while interacting with a stylized 3D ${obj}. A large 3D button reading '${cta}' appears in ${btnHex}. A dynamic ${accHex} ${rib} wraps around the object creating motion. Bottom left text reads '${botLeft}'. Bottom right shows '${logo}'. Energetic, modern, commercial startup aesthetic, soft studio lighting, high resolution.`;
+            finalPrompt = `A high-quality 3D digital illustration themed around "${vars.CONCEPTUAL_HOOK || 'startup growth'}". Background is a smooth gradient using ${color || bg1} and ${bg2} with subtle grain texture. Large bold typography reads '${head}'. A ${eth}-skinned ${gen} with ${hair} hair, wearing ${outfit}, is ${pose} while interacting with a stylized 3D ${obj}. A large 3D button reading '${cta}' appears in ${btnHex}. A dynamic ${accHex} ${rib} wraps around the scene. Bottom left text reads '${botLeft}'. Bottom right shows '${logo}'. Energetic, modern, high resolution.`;
 
             console.log("Style 2 Corporate Memphis Refined:", finalPrompt);
 
@@ -314,16 +317,14 @@ Derive ALL colors from this single brand color:
 - shape_color  → rgba(255,255,255,0.12)
 - text_color   → #ffffff`;
 
-            const templatePrompt = `You are an expert art director specializing in the 2D3D hybrid design trend — flat graphic design combined with a single photorealistic 3D subject that pops out of the composition (think Spotify cards, Duolingo ads, modern motion-graphics posters).
-
-            IMPORTANT: For label, h1, h2, sub provide ONLY raw words. NO dashes, NO quotes, NO punctuation.
-
-            PROJECT: ${projectName || 'The Brand'}
-            DETAILS: ${contentSource}
-            BRAND COLOR: ${color || 'vivid purple'}
+            const templatePrompt = `You are a world-class art director. Perform a DEEP CONCEPTUAL ANALYSIS of the content to find its "visual metaphor" and "emotional core" for a modern 2D3D hybrid poster.
+            
+            ${s3ColorGuide}
 
             Output ONLY a JSON object:
             {
+              "VISUAL_METAPHOR": "a strong visual metaphor for the idea (e.g. 'a golden key for access', 'rising digital stairs for progress')",
+              "EMOTIONAL_CORE": "the core feeling of the piece (e.g. 'high-energy breakthrough', 'serene elite clarity')",
               "label": "short 2-3 word category label (e.g. GROWTH HACK, NEW LAUNCH)",
               "h1": "main bold headline — short punchy line 1",
               "h2": "headline continuation — line 2 (can be empty string if not needed)",
@@ -400,11 +401,11 @@ Derive ALL colors from this single brand color:
 
             // Build label segment only if label is set
             const labelSegment = label
-                ? `a thick rounded rectangle shape in a contrasting accent color containing the all-caps category label "${label}",`
+                ? `a thick rounded rectangle shape in a contrasting accent color containing the all - caps category label "${label}", `
                 : '';
 
             // 2D3D hybrid: flat 2D layout elements + photorealistic 3D subject breaking the plane
-            finalPrompt = `A bold 2D3D hybrid marketing poster. The background is a single flat solid ${color || 'vivid deep purple'} color — no gradients, no textures, completely flat 2D. Overlaying the flat BG are bold 2D graphic design elements: ${labelSegment} massive clean sans-serif white flat typography reading "${h1}"${h2 ? ` then "${h2}"` : ''} stacked in large blocks, a thin flat horizontal rule as a divider, and small flat white text "${sub}". In the lower-center of the composition, a single hyper-realistic photorealistic 3D rendered character — specifically a ${eth}-skinned ${gen}, with ${hair} hair, wearing a ${outfit}, facial expression: ${face}, posed as: ${pose}, next to a 3D ${obj} — bursts forward out of the flat background. The 3D figure has full cinematic lighting, subsurface scattering skin, detailed cloth physics, and drops a realistic soft shadow onto the 2D background. At the bottom: a flat 2D pill button in the accent color with bold white text "${cta}", the logo text "${logo}" in clean sans-serif, and small footer text "${footer}". The result is a sharp contrast between the completely flat 2D graphic layout and the singular photorealistic 3D character. Editorial, high-impact, 8K resolution.`;
+            finalPrompt = `A bold 2D3D hybrid marketing poster themed around "${vars.VISUAL_METAPHOR || 'innovation'}". The background is a single flat solid ${color || 'vivid deep purple'} color capturing a "${vars.EMOTIONAL_CORE || 'dynamic breakthrough'}" mood. Overlaying the flat BG are bold 2D graphic design elements: ${labelSegment}massive clean sans-serif white flat typography reading "${h1}"${h2 ? ` then "${h2}"` : ''} stacked in large blocks, a thin flat horizontal rule as a divider, and small flat white text "${sub}". In the lower-center of the composition, a single hyper-realistic photorealistic 3D rendered character — specifically a ${eth}-skinned ${gen}, with ${hair} hair, wearing a ${outfit}, facial expression: ${face}, posed as: ${pose}, next to a 3D ${obj} — bursts forward out of the flat background. The 3D figure has full cinematic lighting and subsurface scattering. At the bottom: a flat 2D pill button with bold white text "${cta}", the logo text "${logo}" in clean sans-serif, and small footer text "${footer}". The result is a sharp contrast between the 2D layout and the photorealistic 3D character. 8K resolution.`;
 
             console.log("Style 3 2D3D Hybrid:", finalPrompt);
 
@@ -466,7 +467,7 @@ Derive ALL colors from this single brand color:
                 const isRateLimit = err?.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED');
 
                 if (isRateLimit && attempts < maxAttempts) {
-                    console.log(`Rate limit hit (429). Retrying attempt ${attempts + 1}/${maxAttempts}...`);
+                    console.log(`Rate limit hit(429).Retrying attempt ${attempts + 1}/${maxAttempts}...`);
                     await sleep(2000);
                     continue;
                 }
