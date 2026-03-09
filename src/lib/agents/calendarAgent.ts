@@ -3,38 +3,38 @@ import { StrategyOutput } from './strategyAgent';
 import { ContentOutput } from './contentAgent';
 
 export interface CalendarDay {
-    day: number;
-    platform: string;
-    contentType: 'caption' | 'hook' | 'cta' | 'video_script' | 'ad_copy';
-    contentBody: string;
-    scheduledFor?: string; // ISO date string
-    status: 'draft';
+  day: number;
+  platform: string;
+  contentType: 'caption' | 'hook' | 'cta' | 'video_script' | 'ad_copy';
+  contentBody: string;
+  scheduledFor?: string; // ISO date string
+  status: 'draft';
 }
 
 export async function runCalendarAgent(input: {
-    strategy: StrategyOutput;
-    content: ContentOutput;
-    projectName: string;
-    startDate?: string; // ISO date, defaults to today
+  strategy: StrategyOutput;
+  content: ContentOutput;
+  projectName: string;
+  startDate?: string; // ISO date, defaults to today
 }): Promise<CalendarDay[]> {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-    const startDate = input.startDate || new Date().toISOString().split('T')[0];
+  const startDate = input.startDate || new Date().toISOString().split('T')[0];
 
-    // Pre-build a content pool from the generated content
-    const contentPool = JSON.stringify({
-        instagramCaption: input.content.instagram.caption,
-        instagramHook: input.content.instagram.hook,
-        facebookCaption: input.content.facebook.caption,
-        linkedinCaption: input.content.linkedin.caption,
-        tiktokCaption: input.content.tiktok.caption,
-        hooks: input.content.hooks,
-        ctas: input.content.ctas,
-        videoScript: input.content.videoScript,
-        adCopy: input.content.adCopy,
-    });
+  // Pre-build a content pool from the generated content
+  const contentPool = JSON.stringify({
+    instagramCaption: input.content.instagram.caption,
+    instagramHook: input.content.instagram.hook,
+    facebookCaption: input.content.facebook.caption,
+    linkedinCaption: input.content.linkedin.caption,
+    tiktokCaption: input.content.tiktok.caption,
+    hooks: input.content.hooks,
+    ctas: input.content.ctas,
+    videoScript: input.content.videoScript,
+    adCopy: input.content.adCopy,
+  });
 
-    const prompt = `You are the TitanLeap Growth Operations Lead. Your mission is to architect a 30-day 'Velocity-Based' content distribution calendar that builds compounding authority.
+  const prompt = `You are the TitanLeap Growth Operations Lead. Your mission is to architect a 30-day 'Velocity-Based' content distribution calendar that builds compounding authority.
 
 PROJECT: ${input.projectName}
 GROWTH OBJECTIVE: ${input.strategy.campaignObjective}
@@ -65,12 +65,12 @@ Output ONLY a JSON array of exactly 30 objects:
 
 Adapt the ASSET POOL content to fit the daily phase. Precision is non-negotiable.`;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: prompt,
-        config: { responseMimeType: 'application/json', temperature: 0.5 },
-    });
+  const response = await ai.models.generateContent({
+    model: 'gemini-1.5-flash',
+    contents: prompt,
+    config: { responseMimeType: 'application/json', temperature: 0.5 },
+  });
 
-    const parsed = JSON.parse(response.text || '[]');
-    return parsed.slice(0, 30) as CalendarDay[];
+  const parsed = JSON.parse(response.text || '[]');
+  return parsed.slice(0, 30) as CalendarDay[];
 }

@@ -26,7 +26,7 @@ async function callGemini<T>(prompt: string): Promise<T> {
     });
 
     const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-1.5-flash',
         contents: prompt,
         config: {
             responseMimeType: 'application/json',

@@ -105,12 +105,11 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
                     ];
                 } catch (err) {
                     console.error("Failed to fetch reference image:", err);
-                    // Fallback to text-only if image fetch fails
                 }
             }
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-1.5-flash',
                 contents: geminiContents,
                 config: {
                     responseMimeType: 'application/json',
@@ -118,10 +117,33 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
                 },
             });
 
+            const cleanValue = (s: string) => {
+                if (!s) return '';
+                return s.replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
+            };
+
             const vars = JSON.parse(geminiResponse.text || '{}');
 
+            // Hard Overrides: User input beats AI extraction
+            let head1 = cleanValue(vars.headline_line_1);
+            let head2 = cleanValue(vars.headline_line_2);
+            let sub = cleanValue(vars.supporting_statement);
+            let obj1 = cleanValue(vars.primary_3d_object);
+            let obj2 = cleanValue(vars.secondary_3d_object);
+            let logo = cleanValue(projectName || 'The Brand');
+
+            if (headlineText) {
+                // Split multi-line or long headlines into head1 and head2
+                const lines = headlineText.split('\n').map((l: string) => l.trim()).filter(Boolean);
+                head1 = lines[0] || headlineText;
+                head2 = lines[1] || '';
+            }
+            if (primaryObject) obj1 = primaryObject.trim();
+            if (logoText) logo = logoText.trim();
+            if (footerText) sub = footerText.trim(); // For Style 1, footerText maps to supporting statement or we can use bottom text
+
             // Set final Prompt with high-fidelity Flow/Nano aesthetic
-            finalPrompt = `An ultra-HD 3D marketing graphic with a luxurious ${vars.primary_color_name || color || 'dark'} gradient glassmorphism background featuring soft-noise texture and ray-traced reflections. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font saying '${vars.headline_line_1}'. Below it, the word '${vars.headline_line_2}' is elegantly inside a glowing ${vars.accent_color_name} 3D pill shape with internal illumination. A clean, translucent frosted glass banner displays the perfectly legible white text '${vars.supporting_statement}'. In the foreground, a hyper-realistic high-detail 3D ${vars.primary_3d_object} is positioned next to a secondary complementary 3D ${vars.secondary_3d_object}. Sophisticated cinematic studio lighting, sharp caustics, premium 3D advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${projectName || 'The Brand'}".`;
+            finalPrompt = `An ultra-HD 3D marketing graphic with a luxurious ${vars.primary_color_name || color || 'dark'} gradient glassmorphism background featuring soft-noise texture and ray-traced reflections. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font saying '${head1}'. ${head2 ? `Below it, the word '${head2}' is elegantly inside a glowing ${vars.accent_color_name} 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated cinematic studio lighting, sharp caustics, premium 3D advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -146,7 +168,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-1.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -194,7 +216,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-1.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -303,7 +325,7 @@ Derive ALL colors from this single brand color:
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-1.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -383,7 +405,7 @@ Derive ALL colors from this single brand color:
                 // gemini-3.1-flash-image-preview is the correct model for image generation
                 // Must use generateContent (NOT generateImages which hits the Imagen predict endpoint)
                 const imgResponse = await ai.models.generateContent({
-                    model: 'gemini-2.0-flash',
+                    model: 'gemini-1.5-flash',
                     contents: `${finalPrompt} Aspect ratio: ${activeAspectRatio}.`,
                 });
 

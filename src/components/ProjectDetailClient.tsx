@@ -604,8 +604,8 @@ function ContentTab({
                     logoText: logoText || undefined,
                     bottomLeftText: bottomLeftText || undefined,
                     footerText: footerText || undefined,
-                    labelText: selectedStyle === 'style-3' ? labelText : undefined,
-                    headlineText: selectedStyle === 'style-3' ? (headlineText || undefined) : undefined,
+                    labelText: (selectedStyle === 'style-3') ? labelText : undefined,
+                    headlineText: (selectedStyle === 'style-1' || selectedStyle === 'style-2' || selectedStyle === 'style-3') ? (headlineText || undefined) : undefined,
                 })
             });
             const result = await res.json();
@@ -929,7 +929,7 @@ function ContentTab({
                             gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                             gap: 16
                         }}>
-                            {selectedStyle === 'style-3' && (
+                            {(selectedStyle === 'style-1' || selectedStyle === 'style-2' || selectedStyle === 'style-3') && (
                                 <div style={{ gridColumn: '1 / -1' }}>
                                     <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>Headline Text <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — leave empty for AI to generate)</span></label>
                                     <input type="text" className="input" placeholder='e.g. "Ads guy. Content creator." — your exact words' value={headlineText} onChange={e => setHeadlineText(e.target.value)} style={{ borderRadius: 8, fontSize: 12 }} />
