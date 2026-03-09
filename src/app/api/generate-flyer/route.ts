@@ -405,7 +405,7 @@ Derive ALL colors from this single brand color:
                 // gemini-3.1-flash-image-preview is the correct model for image generation
                 // Must use generateContent (NOT generateImages which hits the Imagen predict endpoint)
                 const imgResponse = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.1-flash-image-preview',
                     contents: `${finalPrompt} Aspect ratio: ${activeAspectRatio}.`,
                 });
 
