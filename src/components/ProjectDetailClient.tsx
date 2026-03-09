@@ -605,7 +605,7 @@ function ContentTab({
                     bottomLeftText: bottomLeftText || undefined,
                     footerText: footerText || undefined,
                     labelText: (selectedStyle === 'style-3') ? labelText : undefined,
-                    headlineText: (selectedStyle === 'style-1' || selectedStyle === 'style-2' || selectedStyle === 'style-3') ? (headlineText || undefined) : undefined,
+                    headlineText: headlineText || undefined,
                 })
             });
             const result = await res.json();
@@ -810,6 +810,21 @@ function ContentTab({
                         />
                     </div>
 
+                    {/* Prominent Headline Input */}
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 8 }}>
+                            Headline / Main Text <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — leave empty for AI to generate)</span>
+                        </label>
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder='e.g. "Ads guy. Content creator." — your exact words'
+                            value={headlineText}
+                            onChange={e => setHeadlineText(e.target.value)}
+                            style={{ borderRadius: 10, fontSize: 13, height: 42 }}
+                        />
+                    </div>
+
                     {/* Reference Image Input */}
                     {selectedStyle === 'style-1' && (
                         <div style={{ marginBottom: 20 }}>
@@ -929,12 +944,7 @@ function ContentTab({
                             gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                             gap: 16
                         }}>
-                            {(selectedStyle === 'style-1' || selectedStyle === 'style-2' || selectedStyle === 'style-3') && (
-                                <div style={{ gridColumn: '1 / -1' }}>
-                                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>Headline Text <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — leave empty for AI to generate)</span></label>
-                                    <input type="text" className="input" placeholder='e.g. "Ads guy. Content creator." — your exact words' value={headlineText} onChange={e => setHeadlineText(e.target.value)} style={{ borderRadius: 8, fontSize: 12 }} />
-                                </div>
-                            )}
+                            {/* Headline removed from here and moved to main section */}
                             <div>
                                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>Hair Style</label>
                                 <input type="text" className="input" placeholder="e.g. long straight hair" value={hairStyle} onChange={e => setHairStyle(e.target.value)} style={{ borderRadius: 8, fontSize: 12 }} />
