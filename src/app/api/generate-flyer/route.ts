@@ -119,8 +119,6 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
                 return s.replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
             };
 
-            const vars = JSON.parse(geminiResponse.text || '{}');
-
             // Hard Overrides: User input beats AI extraction
             let head1 = cleanValue(vars.headline_line_1);
             let head2 = cleanValue(vars.headline_line_2);
@@ -130,18 +128,19 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             let logo = cleanValue(projectName || 'The Brand');
 
             if (headlineText) {
-                // Split multi-line or long headlines into head1 and head2
                 const lines = headlineText.split('\n').map((l: string) => l.trim()).filter(Boolean);
                 head1 = lines[0] || headlineText;
                 head2 = lines[1] || '';
             }
             if (primaryObject) obj1 = primaryObject.trim();
             if (logoText) logo = logoText.trim();
-            if (footerText) sub = footerText.trim(); // For Style 1, footerText maps to supporting statement or we can use bottom text
+            if (footerText) sub = footerText.trim();
 
-            // Set final Prompt with high-fidelity adaptive aesthetic
-            const derivedStyle = vars.visual_style || 'luxurious 3D gradient glassmorphism with soft-noise texture and ray-traced reflections';
-            finalPrompt = `An ultra-HD marketing graphic with a ${derivedStyle} background. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font saying '${head1}'. ${head2 ? `Below it, the word '${head2}' is elegantly inside a glowing ${vars.accent_color_name || 'vivid'} 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
+            const activeColor = color || vars.primary_color_name || 'deep purple';
+            const activeAccent = vars.accent_color_name || 'vivid';
+            const derivedStyle = vars.visual_style || `premium ${activeColor} gradient glassmorphism with soft-noise texture and ray-traced reflections`;
+
+            finalPrompt = `An ultra-HD marketing graphic with a ${derivedStyle} background using a ${activeColor} color palette. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font saying '${head1}'. ${head2 ? `Below it, the word '${head2}' is elegantly inside a glowing ${activeAccent} 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -176,7 +175,20 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
 
             const vars = JSON.parse(geminiResponse.text || '{}');
 
-            finalPrompt = `A high-end luxury editorial poster with a deep matte obsidian black background. The typography is massive, elegant, high-contrast white serif font (like Didot or Bodoni) reading "${vars.SERIF_HEADLINE}". At the top, a small monospace technical label "${vars.MONO_LABEL}". Centered is a stunning, hyper-realistic 3D ${vars.CORE_OBJECT} with brushed ${vars.ACCENT_METAL} accents and liquid metal textures. The lighting is cinematic low-key with sharp rim highlights and soft volumetrics. The bottom features a minimal white tagline "${vars.TAGLINE}". Executive aesthetic, premium tech luxury, 8k resolution, perfectly clean composition.`;
+            const activeColor = color || 'obsidian black';
+            let headline = (vars.SERIF_HEADLINE || '').toUpperCase();
+            let labelTextVal = vars.MONO_LABEL || 'SYSTEM_ACTIVE';
+            let tagline = vars.TAGLINE || '';
+            let obj = vars.CORE_OBJECT || 'abstract luxury 3D object';
+            let logo = projectName || 'The Brand';
+
+            if (headlineText) headline = headlineText.toUpperCase();
+            if (labelText) labelTextVal = labelText.toUpperCase();
+            if (footerText) tagline = footerText;
+            if (logoText) logo = logoText;
+            if (primaryObject) obj = primaryObject;
+
+            finalPrompt = `A high-end luxury editorial poster with a deep matte ${activeColor} background. The typography is massive, elegant, high-contrast white serif font (like Didot or Bodoni) reading "${headline}". At the top, a small monospace technical label "${labelTextVal}". Centered is a stunning, hyper-realistic 3D ${obj} with brushed metallic accents and liquid textures. The lighting is cinematic low-key with sharp rim highlights and soft volumetrics. The bottom features a minimal white tagline "${tagline}". Executive aesthetic, premium tech luxury, 8k resolution, perfectly clean composition. Brand: ${logo}.`;
 
             console.log("Style 4 Titan Elite Created:", finalPrompt);
         } else if (style === 'style-2') {
@@ -266,7 +278,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             if (poseDescription) pose = poseDescription.trim();
             if (primaryObject) obj = primaryObject.trim();
 
-            finalPrompt = `A high-quality 3D digital illustration in Corporate Memphis startup style. Background is a smooth gradient using ${bg1} and ${bg2} with subtle grain texture. Large bold typography reads '${head}'. A ${eth}-skinned ${gen} with ${hair} hair, wearing ${outfit}, is ${pose} while interacting with a stylized 3D ${obj}. A large 3D button reading '${cta}' appears in ${btnHex}. A dynamic ${accHex} ${rib} wraps around the object creating motion. Bottom left text reads '${botLeft}'. Bottom right shows '${logo}'. Energetic, modern, commercial startup aesthetic, soft studio lighting, high resolution.`;
+            finalPrompt = `A high-quality 3D digital illustration in Corporate Memphis startup style. Background is a smooth gradient using ${color || bg1} and ${bg2} with subtle grain texture. Large bold typography reads '${head}'. A ${eth}-skinned ${gen} with ${hair} hair, wearing ${outfit}, is ${pose} while interacting with a stylized 3D ${obj}. A large 3D button reading '${cta}' appears in ${btnHex}. A dynamic ${accHex} ${rib} wraps around the object creating motion. Bottom left text reads '${botLeft}'. Bottom right shows '${logo}'. Energetic, modern, commercial startup aesthetic, soft studio lighting, high resolution.`;
 
             console.log("Style 2 Corporate Memphis Refined:", finalPrompt);
 
