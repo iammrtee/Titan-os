@@ -200,7 +200,7 @@ Return ONLY valid JSON with this exact structure:
       "core_message": "string - The main strategic takeaway",
       "caption_hook": "string - Pattern-interrupting hook",
       "framework_used": "string - e.g., Authority, Psych-Gap, Transformation",
-      "authority_script": "string - A dense, high-authority script/framework that follows the chosen framework. DO NOT explain why it works, JUST provide the script.",
+      "execution_script": "string - A dense, framework-driven script or outline that follows the chosen 'framework_used'. DO NOT explain why it works, JUST provide the script.",
       "cta": "string",
       "funnel_stage": "string"
     }

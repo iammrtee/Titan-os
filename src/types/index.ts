@@ -132,7 +132,7 @@ export interface ContentCalendarEntry {
     framework_used?: string;
     cta?: string;
     funnel_stage?: string;
-    authority_script?: string;
+    execution_script?: string;
 }
 
 export interface ContentCalendarResult {

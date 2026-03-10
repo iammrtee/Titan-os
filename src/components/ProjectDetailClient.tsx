@@ -1308,15 +1308,15 @@ function ContentTab({
                                  <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{String(entry?.core_message || entry?.topic || '')}</p>
                                 <p style={{ color: 'var(--text-secondary)', fontSize: 13, fontStyle: 'italic', marginBottom: entry?.framework_used || entry?.cta || entry?.why_this_converts ? 12 : 0 }}>&ldquo;{String(entry?.caption_hook || '')}&rdquo;</p>
 
-                                 {(entry?.framework_used || entry?.cta || entry?.authority_script) && (
+                                 {(entry?.framework_used || entry?.cta || entry?.execution_script) && (
                                     <div style={{ background: 'var(--bg-secondary)', padding: 12, borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                                         {entry?.framework_used && (
                                             <div><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Framework:</span> {String(entry.framework_used)}</div>
                                         )}
-                                        {entry?.authority_script && (
+                                        {entry?.execution_script && (
                                             <div style={{ marginTop: 4 }}>
-                                                <span style={{ fontWeight: 600, color: 'var(--accent)', display: 'block', marginBottom: 4 }}>Authority Script:</span>
-                                                <div style={{ lineHeight: 1.6, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{String(entry.authority_script)}</div>
+                                                <span style={{ fontWeight: 600, color: 'var(--accent)', display: 'block', marginBottom: 4 }}>Execution Script:</span>
+                                                <div style={{ lineHeight: 1.6, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{String(entry.execution_script)}</div>
                                             </div>
                                         )}
                                         {entry?.cta && (
