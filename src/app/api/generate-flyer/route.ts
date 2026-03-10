@@ -59,21 +59,32 @@ export async function POST(req: NextRequest) {
 - Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
                 : '';
 
-            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a DEEP ANALYSIS of BOTH the provided inspiration image and the content idea text to extract its core visual and conceptual DNA.
+            const templatePrompt = `You are an elite Art Director and Visual Strategist at TitanLeap. 
+            Your task is to conduct a DEEP CONCEPTUAL SYNTHESIS between the provided REFERENCE IMAGE and the CONTENT IDEA.
+            USER OVERRIDES (PRIORITY):
+            - Primary Subject: ${primaryObject || 'Detect from image'}
+            - Headline: ${headlineText || 'Derive from content'}
+            - Style Context: ${characterGender ? `${characterGender} ${characterEthnicity} character` : 'Any'}
             
-            EXTRACT DETAILED VISUAL & CONCEPTUAL DATA:
+            🧠 SENSE-MAKING LOGIC:
+            - You MUST identify the visual DNA of the reference image (lighting, color, materials, vibe).
+            - You MUST create a unique VISUAL METAPHOR that bridges the image's aesthetic with the PROMPT'S core idea.
+            - If a "Primary Subject" is specified in overrides above, you MUST use that subject. 
+            - If the Primary Subject is different from the image (e.g. Image=Sheep, Subject=Cow), re-imagine the Cow with the Sheep's exact aesthetic properties (e.g. woolly texture, soft lighting).
+            
+            EXTRACT DATA:
             1. primary_color_hex: extract accurate hex codes from the image/content
             2. secondary_color_hex: extract supporting accent hex codes
             3. lighting_atmosphere: describe the specific lighting and mood (e.g. "cinematic rim lighting", "soft pastel morning glow")
             4. texture_material: describe surface qualities (e.g. "frosted refractive glass", "matte obsidian")
             5. composition_layout: describe spatial arrangement (e.g. "dynamic diagonal tension")
             6. artistic_style: 1-sentence summary of the medium and aesthetic
-            7. conceptual_anchor: The main visual metaphor derived from analyzing the content idea: ${contentSource}
-            8. primary_3d_object: Identify the MAIN PHYSICAL SUBJECT/OBJECT present in the reference image (is it a man? woman? child? robotic hand? shiny orb? mascot? animal?). Describe it as a stylized high-end 3D model that also visually represents the content anchor: ${contentSource}
-            9. secondary_3d_object: A smaller accent object reinforcing the theme
-            10. headline_line_1: Most impactful part of the text
+            7. conceptual_anchor: A sophisticated visual metaphor that blends the PROMPT's meaning with the IMAGE's subject.
+            8. primary_3d_object: Describe the SYNTHESIZED subject in high detail. (e.g. "A hyper-realistic 3D ${primaryObject || 'Synthesized Object'} representing the concept of: ${activeTopic}").
+            9. secondary_3d_object: A smaller accent object reinforcing the transition from ${topic || 'old'} to ${core_message || 'new'}.
+            10. headline_line_1: Most punchy, high-authority part of the headline (Max 4 words)
             11. headline_line_2: Supporting part of the headline
-            12. supporting_statement: A short subheadline for the footer area
+            12. supporting_statement: A short subheadline/banner text mirroring the prompt's core logic: "${activeTopic}".
 
             Output ONLY a JSON object with these EXACT keys.`;
 
@@ -145,6 +156,8 @@ export async function POST(req: NextRequest) {
             } else if (headlineText && customContent) {
                 // If headline is manual, map customContent to the supporting statement banner
                 sub = customContent.trim().split('\n')[0];
+            } else if (vars.supporting_statement) {
+                sub = cleanValue(vars.supporting_statement);
             }
 
             // Character details: Improved integration
@@ -175,18 +188,32 @@ export async function POST(req: NextRequest) {
             PROJECT: ${projectName || 'The Brand'}
             CONTENT: ${contentSource}
             
+            ${referenceImageUrl ? 'REFERENCE IMAGE PROVIDED: You MUST analyze the image aesthetic and blend it with the content metaphor.' : ''}
+
             Output JSON:
             {
               "SERIF_HEADLINE": "massive elegant serif headline (max 3 words)",
               "CONCEPTUAL_THEME": "a sophisticated visual metaphor (e.g. 'the weight of legacy', 'orbital precision')",
               "ACCENT_METAL": "gold, silver, bronze, or copper",
-              "CORE_OBJECT": "A high-end 3D object representing the metahpor (e.g. floating platinum cube, obsidian orb)",
+              "CORE_OBJECT": "A high-end 3D object representing the metahpor. ${primaryObject ? `The user explicitly requested: ${primaryObject}` : ''}",
               "TAGLINE": "one refined sentence of copy summarizing the idea"
             }`;
 
+            const imgRes = await fetch(referenceImageUrl!);
+            const buffer = await imgRes.arrayBuffer();
+            const b64 = Buffer.from(buffer).toString('base64');
+            const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+
+            const geminiContents = referenceImageUrl 
+                ? [
+                    { text: templatePrompt },
+                    { inlineData: { data: b64, mimeType: mime } }
+                  ]
+                : templatePrompt;
+
             const geminiResponse = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
-                contents: templatePrompt,
+                contents: geminiContents as any,
                 config: {
                     responseMimeType: 'application/json',
                     temperature: 0.6,
@@ -232,15 +259,17 @@ export async function POST(req: NextRequest) {
                 ? `Custom Content: ${customContent}`
                 : `Post Topic: ${topic}\nHeadline Hook: ${hook}`;
 
-            const templatePrompt = `You are a high-end 3D illustrator. Perform a DEEP ANALYSIS of the content to find its "human core" and "visual hook" for a modern startup poster.
+            const templatePrompt = `You are a world-class 3D illustrator and Art Director. 
+            Perform a DEEP CONCEPTUAL SYNTHESIS between the content and the vision DNA.
             
             PROJECT: ${projectName || 'The Brand'}
             DETAILS: ${contentSource}
             BRAND COLOR: ${color || 'vivid purple'}
+            ${referenceImageUrl ? 'REFERENCE IMAGE PROVIDED: Analyze the aesthetic DNA (lighting, color, style) and blend it with the content.' : ''}
 
             Output ONLY a JSON object:
             {
-              "CONCEPTUAL_HOOK": "the core human value or action mentioned in the text",
+              "CONCEPTUAL_HOOK": "a visual metaphor bridging the content and style (e.g. 'the pulse of efficiency')",
               "HEADLINE_TEXT": "catchy massive headline",
               "CHARACTER_GENDER": "${characterGender || 'male/female/non-binary'}",
               "CHARACTER_ETHNICITY": "${characterEthnicity || 'any'}",
@@ -260,9 +289,16 @@ export async function POST(req: NextRequest) {
               "RIBBON_STYLE": "dynamic swoosh ribbon"
             }`;
 
+            const geminiContents = referenceImageUrl 
+                ? [
+                    { text: templatePrompt },
+                    { inlineData: { data: (await (await (await fetch(referenceImageUrl)).arrayBuffer())).toString('base64'), mimeType: 'image/jpeg' } }
+                  ]
+                : templatePrompt;
+
             const geminiResponse = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
-                contents: templatePrompt,
+                contents: geminiContents as any,
                 config: {
                     responseMimeType: 'application/json',
                     temperature: 0.7,
@@ -353,13 +389,15 @@ Derive ALL colors from this single brand color:
 - shape_color  → rgba(255,255,255,0.12)
 - text_color   → #ffffff`;
 
-            const templatePrompt = `You are a world-class art director. Perform a DEEP CONCEPTUAL ANALYSIS of the content to find its "visual metaphor" and "emotional core" for a modern 2D3D hybrid poster.
-            
+            const templatePrompt = `You are a world-class Art Director and Visual Strategist. 
+            Perform a DEEP CONCEPTUAL SYNTHESIS between the content and the vision DNA.
+            ${referenceImageUrl ? 'REFERENCE IMAGE PROVIDED: Analyze the aesthetic DNA (lighting, color, style) and blend it with the content.' : ''}
+
             ${s3ColorGuide}
 
             Output ONLY a JSON object:
             {
-              "VISUAL_METAPHOR": "a strong visual metaphor for the idea (e.g. 'a golden key for access', 'rising digital stairs for progress')",
+              "VISUAL_METAPHOR": "a strong visual metaphor bridging the idea and style",
               "EMOTIONAL_CORE": "the core feeling of the piece (e.g. 'high-energy breakthrough', 'serene elite clarity')",
               "label": "short 2-3 word category label (e.g. GROWTH HACK, NEW LAUNCH)",
               "h1": "main bold headline — short punchy line 1",
@@ -377,9 +415,16 @@ Derive ALL colors from this single brand color:
               "FOOTER_TEXT": "${footerText || 'tagline or website'}"
             }`;
 
+            const geminiContents = referenceImageUrl 
+                ? [
+                    { text: templatePrompt },
+                    { inlineData: { data: (await (await (await fetch(referenceImageUrl)).arrayBuffer())).toString('base64'), mimeType: 'image/jpeg' } }
+                  ]
+                : templatePrompt;
+
             const geminiResponse = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
-                contents: templatePrompt,
+                contents: geminiContents as any,
                 config: {
                     responseMimeType: 'application/json',
                     temperature: 0.7,
