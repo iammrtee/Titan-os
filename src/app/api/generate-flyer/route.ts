@@ -56,31 +56,24 @@ export async function POST(req: NextRequest) {
                 ? `The user has provided a reference image for visual inspiration.
 - You MUST analyze the reference image's color palette, atmosphere, lighting, and composition.
 - Derive the primary colors and visual "vibe" primarily from this reference image.
-- Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.
-- CRITICAL: User-provided inputs for BRAND COLORS and PRIMARY OBJECTS must OVERRIDE the reference image. If a brand color is provided, ignore the reference image colors. If a primary object is provided, ignore the reference image subject.`
+- Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
                 : '';
-            const templatePrompt = `You are a world-class Visual DNA Analyst. Your task is to perform an EXTREMELY DEEP ANALYSIS of the provided inspiration image and the content idea text. You must decode the image's "Spatial DNA" — its environment, lighting physics, and background elements.
 
-            STRICT INTELLIGENCE GUIDELINES:
-            1. SUBJECT REPLACEMENT: If the user provides a "Primary 3D Object" (${primaryObject || 'none'}), you MUST surgically REMOVE the original subject from the image's DNA and ONLY focus on the environment/atmosphere.
-            2. COLOR HIERARCHY: If a "Brand Color" exists (${color || 'none'}), it COMPLETELY OVERRIDES EVERY COLOR in the reference image. Rewrite the DNA to match the new color palette perfectly.
-            3. OBJECT SINGULARITY: If a "Primary 3D Object" or "Main Subject" is specified, DO NOT add secondary/filler 3D objects. NO UNRELATED 3D "MARKETING PROPS" (coins, rockets, etc.) allowed. Keep the focus singular and high-authority.
-            4. FIDELITY: Capture the full atmospheric DNA (vibe, grain, specific background props/furniture) of the reference image, but adapt it to the new color and subject.
+            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a DEEP ANALYSIS of BOTH the provided inspiration image and the content idea text to extract its core visual and conceptual DNA.
             
-            EXTRACT DATA:
-            1. primary_color_hex: MUST be the brand color if provided: ${color || 'derive from image'}
-            2. secondary_color_hex: supporting hex matching the new theme
-            3. lighting_physics: light sources, shadows, and reflections
-            4. material_textures: surface qualities
-            5. background_environment_dna: description of the setting WITHOUT the original subject
-            6. composition_spatial_layout: spatial arrangement
-            7. artistic_aesthetic: rendering style
-            8. identified_subject_to_replace: the main figure to REMOVE
-            9. conceptual_anchor: visual metaphor for: ${contentSource}
-            10. creative_filler_details: ONLY add if it enhances the background environment; DO NOT add objects competing with the primary subject.
-            11. headline_line_1: text 1
-            12. headline_line_2: text 2
-            13. supporting_statement: footer text
+            EXTRACT DETAILED VISUAL & CONCEPTUAL DATA:
+            1. primary_color_hex: extract accurate hex codes from the image/content
+            2. secondary_color_hex: extract supporting accent hex codes
+            3. lighting_atmosphere: describe the specific lighting and mood (e.g. "cinematic rim lighting", "soft pastel morning glow")
+            4. texture_material: describe surface qualities (e.g. "frosted refractive glass", "matte obsidian")
+            5. composition_layout: describe spatial arrangement (e.g. "dynamic diagonal tension")
+            6. artistic_style: 1-sentence summary of the medium and aesthetic
+            7. conceptual_anchor: The main visual metaphor derived from analyzing the content idea: ${contentSource}
+            8. primary_3d_object: Identify the MAIN PHYSICAL SUBJECT/OBJECT present in the reference image (is it a man? woman? child? robotic hand? shiny orb? mascot? animal?). Describe it as a stylized high-end 3D model that also visually represents the content anchor: ${contentSource}
+            9. secondary_3d_object: A smaller accent object reinforcing the theme
+            10. headline_line_1: Most impactful part of the text
+            11. headline_line_2: Supporting part of the headline
+            12. supporting_statement: A short subheadline for the footer area
 
             Output ONLY a JSON object with these EXACT keys.`;
 
@@ -111,9 +104,9 @@ export async function POST(req: NextRequest) {
                 },
             });
 
-            const cleanValue = (s: any) => {
+            const cleanValue = (s: string) => {
                 if (!s) return '';
-                return String(s).replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
+                return s.replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
             };
 
             const vars = JSON.parse(geminiResponse.text || '{}');
@@ -122,58 +115,47 @@ export async function POST(req: NextRequest) {
             let head1 = cleanValue(vars.headline_line_1 || vars.headline_text || '');
             let head2 = cleanValue(vars.headline_line_2 || '');
             let sub = cleanValue(vars.supporting_statement || '');
-            const obj1 = cleanValue(vars.primary_3d_object || '');
-            const identifiedSubject = cleanValue(vars.identified_subject_to_replace || '');
-            const enhancedDetails = cleanValue(vars.creative_filler_details || '');
-
+            let obj1 = cleanValue(vars.primary_3d_object || '');
+            let obj2 = cleanValue(vars.secondary_3d_object || '');
             const anchor = cleanValue(vars.conceptual_anchor || '');
             let logo = cleanValue(projectName || 'The Brand');
 
             // Deep Visual DNA
             const activeColor = color || vars.primary_color_hex || vars.primary_color_name || 'deep purple';
-            const lighting = cleanValue(vars.lighting_physics || vars.lighting_atmosphere || 'professional studio lighting');
-            const materials = cleanValue(vars.material_textures || vars.texture_material || 'premium surfaces');
-            const env = cleanValue(vars.background_environment_dna || vars.background_environment || 'a sleek professional marketing background');
-            const composition = cleanValue(vars.composition_spatial_layout || vars.composition_layout || 'modern balanced layout');
-            const styleLabel = cleanValue(vars.artistic_aesthetic || vars.artistic_style || 'modern marketing aesthetic');
+            const lighting = cleanValue(vars.lighting_atmosphere || 'professional studio lighting');
+            const materials = cleanValue(vars.texture_material || 'premium surfaces');
+            const composition = cleanValue(vars.composition_layout || 'modern balanced layout');
+            const styleLabel = cleanValue(vars.artistic_style || 'modern marketing aesthetic');
 
             if (headlineText) {
                 const lines = headlineText.split('\n').map((l: string) => l.trim()).filter(Boolean);
                 head1 = lines[0] || headlineText;
                 head2 = lines[1] || '';
             }
+
+            // If a primaryObject is manually provided, it replaces the AI-extracted object.
+            // If it's a manual override, we assume the user wants THIS object to be the focus.
+            if (primaryObject) {
+                obj1 = primaryObject.trim();
+            }
+
             if (logoText) logo = logoText.trim();
             if (footerText) {
                 sub = footerText.trim();
             } else if (headlineText && customContent) {
+                // If headline is manual, map customContent to the supporting statement banner
                 sub = customContent.trim().split('\n')[0];
             }
 
-            // DYNAMIC SUBJECT SWAPPING LOGIC:
-            let mainSubjectDesc = primaryObject ? primaryObject.trim() : (identifiedSubject || obj1);
+            // Character details: Improved integration
+            // If the primary object is clearly NOT a person (e.g. "robot", "car", "logo"), we might want to skip charDesc 
+            // but for Style 1 the user often expects the character inputs to apply to the main subject if it's humanoid.
+            const hasCharacterProps = characterGender || facialExpression || poseDescription || hairStyle || outfitDescription;
+            const charDesc = hasCharacterProps
+                ? `Specifically, the ${obj1} is a ${characterEthnicity || 'any'}-skinned ${characterGender || 'person'} with ${hairStyle || 'natural hair'}, wearing ${outfitDescription || 'stylish professional clothes'}. The facial expression is strictly "${facialExpression || 'confident'}" and the pose is "${poseDescription || 'standing'}".`
+                : '';
 
-            // Integrate character details INTO the main subject
-            const hasCharacterInput = characterGender || facialExpression || poseDescription;
-            if (hasCharacterInput || !primaryObject) {
-                // If no user primary object and no specific character input, we AUTO-ENHANCE the character
-                const gender = characterGender || 'professional figure';
-                const ethnicity = characterEthnicity ? `${characterEthnicity} ` : '';
-                const hair = hairStyle ? ` with ${hairStyle} hair` : ' with sleek professional hair';
-                const apparel = outfitDescription ? `, wearing ${outfitDescription}` : ', wearing a sharp minimalist executive outfit';
-                const expr = facialExpression ? `, expressing ${facialExpression}` : ', expressing calm high-conviction confidence';
-                const pose = poseDescription ? `, in a ${poseDescription} pose` : ', in a powerful strategic pose';
-
-                mainSubjectDesc = `${ethnicity}${gender} ${mainSubjectDesc}${hair}${apparel}${expr}${pose}`;
-            }
-
-            // Final scene enhancement
-            const sceneAccents = enhancedDetails ? ` The scene is further elevated with ${enhancedDetails}.` : '';
-
-            // STRICT OVERRIDE FOR GENERATION MODEL
-            const colorStrictness = color ? ` CRITICAL: The ENTIRE color palette of the image (background, subject, accents) MUST strictly be "${color}". IGNORE all other colors.` : '';
-            const objectStrictness = primaryObject ? ` CRITICAL: The ONLY 3D object in focus is the ${primaryObject.trim()}. DO NOT include any other 3D props or secondary objects from the reference image.` : '';
-
-            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette.${colorStrictness} The composition is ${composition} within ${env}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}.${sceneAccents}${objectStrictness} The top half features massive, clean, rounded white 3D letters in a bold font for the headline: '${head1}'. ${head2 ? `Below it, '${head2}' is placed inside a glowing 3D pill shape.` : ''} A frosted glass banner displays the white sub-text '${sub}'. The central main subject is a hyper-realistic high-detail 3D ${mainSubjectDesc}, rendered perfectly within the environment. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution. Brand signature: "${logo}".`;
+            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} ${charDesc} is positioned next to a secondary complementary 3D ${obj2}, visually representing the core idea. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -276,9 +258,9 @@ export async function POST(req: NextRequest) {
                 },
             });
 
-            const cleanValue = (s: any) => {
+            const cleanValue = (s: string) => {
                 if (!s) return '';
-                return String(s).replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
+                return s.replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
             };
 
             const vars = JSON.parse(geminiResponse.text || '{}');
@@ -388,9 +370,9 @@ Derive ALL colors from this single brand color:
                 },
             });
 
-            const cleanValue = (s: any) => {
+            const cleanValue = (s: string) => {
                 if (!s) return '';
-                return String(s).replace(/[—\-_:*]/g, '').replace(/^(TYPOGRAPHY|HEADLINE|LINE|TEXT|LABEL|PART|DESCRIPTION|BACKGROUND|SUBJECT|H1|H2|SUB)\s*\d*/gi, '').replace(/["'*]/g, '').trim();
+                return s.replace(/[—\-_:*]/g, '').replace(/^(TYPOGRAPHY|HEADLINE|LINE|TEXT|LABEL|PART|DESCRIPTION|BACKGROUND|SUBJECT|H1|H2|SUB)\s*\d*/gi, '').replace(/["'*]/g, '').trim();
             };
 
             const vars = JSON.parse(geminiResponse.text || '{}');
