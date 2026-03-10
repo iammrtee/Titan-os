@@ -26,13 +26,20 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # local env files
-.env*.local
-.env
+**/.env*
+add-env.ps1
 
 # vercel
 /.vercel
 
-# autopost debug & temp
+# backups
+*.zip
+*.tar.gz
+*.rar
+
+# temp media and debug
+temp_media_*
+diag_out*.json
 /autopost/debug_*
 /autopost/temp_media_*
 /autopost/inspect_*.js
@@ -40,3 +47,10 @@ yarn-error.log*
 /autopost/auth/*.json
 /autopost/*.html
 /autopost/*.png
+/autopost/*.mp4
+*.log
+
+# ignore root temp media
+/*.mp4
+/*.png
+!/public/**

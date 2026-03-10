@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         // Optimize query: select only what's needed and use a single join
         const { data: campaigns, error } = await supabase
             .from('campaigns')
-            .select('id, status, flyer_image_url, created_at, projects(id, name)')
+            .select('id, status, flyer_image_url, created_at, projects!inner(id, name)')
             .eq('projects.user_id', user.id)
             .match(projectId ? { project_id: projectId } : {})
             .order('created_at', { ascending: false });

@@ -141,7 +141,13 @@ export async function POST(req: NextRequest) {
                 sub = customContent.trim().split('\n')[0];
             }
 
-            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}, visually representing the core idea. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
+            // Character details for Style 1 (if provided)
+            const hasCharacter = characterGender || facialExpression || poseDescription;
+            const charDesc = hasCharacter
+                ? `Specifically featuring a ${characterEthnicity || 'any'}-skinned ${characterGender || 'person'} with ${hairStyle || 'natural hair'}, wearing ${outfitDescription || 'stylish professional clothes'}. The character's facial expression is strictly "${facialExpression || 'confident'}" and their pose is "${poseDescription || 'standing'}".`
+                : '';
+
+            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} ${charDesc} is positioned next to a secondary complementary 3D ${obj2}, visually representing the core idea. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -192,7 +198,13 @@ export async function POST(req: NextRequest) {
             if (logoText) logo = logoText;
             if (primaryObject) obj = primaryObject;
 
-            finalPrompt = `A high-end luxury editorial poster themed around "${vars.CONCEPTUAL_THEME || 'elite excellence'}". The background is a deep matte ${activeColor}. Typography is massive, elegant, high-contrast white serif font reading "${headline}". Small monospace label "${vars.MONO_LABEL || 'TITAN_ELITE'}". Centered is a stunning, hyper-realistic 3D ${obj} with ${vars.ACCENT_METAL || 'platinum'} accents. The lighting is cinematic low-key with sharp rim highlights. Bottom features a minimal white tagline "${tagline}". Brand: ${logo}.`;
+            // Character details for Style 4 (if provided)
+            const hasCharacter = characterGender || facialExpression || poseDescription;
+            const charDesc = hasCharacter
+                ? `Specifically featuring a ${characterEthnicity || 'any'}-skinned ${characterGender || 'person'} with ${hairStyle || 'natural hair'}, wearing ${outfitDescription || 'luxury high-end fashion'}. Facial expression: strictly "${facialExpression || 'stoic and elite'}", pose: "${poseDescription || 'composed'}".`
+                : '';
+
+            finalPrompt = `A high-end luxury editorial poster themed around "${vars.CONCEPTUAL_THEME || 'elite excellence'}". The background is a deep matte ${activeColor}. Typography is massive, elegant, high-contrast white serif font reading "${headline}". Small monospace label "${vars.MONO_LABEL || 'TITAN_ELITE'}". Centered is a stunning, hyper-realistic 3D ${obj} ${charDesc} with ${vars.ACCENT_METAL || 'platinum'} accents. The lighting is cinematic low-key with sharp rim highlights. Bottom features a minimal white tagline "${tagline}". Brand: ${logo}.`;
 
             console.log("Style 4 Titan Elite Created:", finalPrompt);
         } else if (style === 'style-2') {
@@ -287,7 +299,7 @@ export async function POST(req: NextRequest) {
             if (poseDescription) pose = poseDescription.trim();
             if (primaryObject) obj = primaryObject.trim();
 
-            finalPrompt = `A high-quality 3D digital illustration themed around "${vars.CONCEPTUAL_HOOK || 'startup growth'}". Background is a smooth gradient using ${color || bg1} and ${bg2} with subtle grain texture. Large bold typography reads '${head}'. A ${eth}-skinned ${gen} with ${hair} hair, wearing ${outfit}, is ${pose} while interacting with a stylized 3D ${obj}. A large 3D button reading '${cta}' appears in ${btnHex}. A dynamic ${accHex} ${rib} wraps around the scene. Bottom left text reads '${botLeft}'. Bottom right shows '${logo}'. Energetic, modern, high resolution.`;
+            finalPrompt = `A high-quality 3D digital illustration themed around "${vars.CONCEPTUAL_HOOK || 'startup growth'}". Background is a smooth gradient using ${color || bg1} and ${bg2} with subtle grain texture. Large bold typography reads '${head}'. A ${eth}-skinned ${gen} with ${hair} hair, wearing ${outfit}, with a facial expression strictly "${face}", is ${pose} while interacting with a stylized 3D ${obj}. A large 3D button reading '${cta}' appears in ${btnHex}. A dynamic ${accHex} ${rib} wraps around the scene. Bottom left text reads '${botLeft}'. Bottom right shows '${logo}'. Energetic, modern, high resolution.`;
 
             console.log("Style 2 Corporate Memphis Refined:", finalPrompt);
 
