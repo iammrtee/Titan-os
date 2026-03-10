@@ -349,6 +349,7 @@ function ContentTab({
     modifyError,
     updateAssets,
     setUpdateAssets,
+    modifyProgress = 0,
 }: {
     data: ContentCalendarResult | null | undefined,
     projectName: string,
@@ -366,6 +367,7 @@ function ContentTab({
     modifyError: string,
     updateAssets: boolean,
     setUpdateAssets: (val: boolean) => void,
+    modifyProgress?: number;
 }) {
     const [selectedStyle, setSelectedStyle] = useState('style-1');
     const [customColor, setCustomColor] = useState('');
@@ -1306,16 +1308,19 @@ function ContentTab({
                                  <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{String(entry?.core_message || entry?.topic || '')}</p>
                                 <p style={{ color: 'var(--text-secondary)', fontSize: 13, fontStyle: 'italic', marginBottom: entry?.framework_used || entry?.cta || entry?.why_this_converts ? 12 : 0 }}>&ldquo;{String(entry?.caption_hook || '')}&rdquo;</p>
 
-                                {(entry?.framework_used || entry?.cta || entry?.why_this_converts) && (
+                                 {(entry?.framework_used || entry?.cta || entry?.authority_script) && (
                                     <div style={{ background: 'var(--bg-secondary)', padding: 12, borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                                         {entry?.framework_used && (
                                             <div><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Framework:</span> {String(entry.framework_used)}</div>
                                         )}
-                                        {entry?.cta && (
-                                            <div><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>CTA:</span> {String(entry.cta)}</div>
+                                        {entry?.authority_script && (
+                                            <div style={{ marginTop: 4 }}>
+                                                <span style={{ fontWeight: 600, color: 'var(--accent)', display: 'block', marginBottom: 4 }}>Authority Script:</span>
+                                                <div style={{ lineHeight: 1.6, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{String(entry.authority_script)}</div>
+                                            </div>
                                         )}
-                                        {entry?.why_this_converts && (
-                                            <div><span style={{ fontWeight: 600, color: 'var(--success)' }}>Why it works:</span> {String(entry.why_this_converts)}</div>
+                                        {entry?.cta && (
+                                            <div style={{ marginTop: 4 }}><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>CTA:</span> {String(entry.cta)}</div>
                                         )}
                                     </div>
                                 )}
@@ -1809,6 +1814,7 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
                                         modifyError={modifyError}
                                         updateAssets={updateAssets}
                                         setUpdateAssets={setUpdateAssets}
+                                        modifyProgress={modifyProgress}
                                     />
                                 )}
                                 {activeTab === 'content' && <ContentAssetsTab data={outputs?.assets?.assets_json} />}
