@@ -1234,14 +1234,52 @@ function ContentTab({
                             </div>
                         )}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-                            <button
-                                className="btn btn-primary"
-                                style={{ height: 32, padding: '0 16px', fontSize: 12 }}
-                                onClick={handleModifyCalendar}
-                                disabled={modifyingCalendar || !calendarInstruction.trim()}
-                            >
-                                {modifyingCalendar ? 'Refining Strategy...' : 'Regenerate Content Matrix'}
-                            </button>
+                            {modifyingCalendar ? (
+                                <div style={{
+                                    width: '100%',
+                                    marginTop: 10,
+                                    padding: '24px',
+                                    background: 'rgba(124,111,255,0.05)',
+                                    borderRadius: 16,
+                                    border: '1px solid rgba(124,111,255,0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 12
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.01em' }}>
+                                            Deep Strategy Refinement <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(Phase {modifyProgress < 40 ? '1: Intent Analysis' : modifyProgress < 75 ? '2: Strategic Mapping' : '3: Content Generation'})</span>
+                                        </p>
+                                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', fontFamily: 'monospaced' }}>{Math.round(modifyProgress)}%</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', position: 'relative' }}>
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            height: '100%',
+                                            width: `${modifyProgress}%`,
+                                            background: 'linear-gradient(90deg, #7c6fff 0%, #a78bfa 100%)',
+                                            borderRadius: 10,
+                                            transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            boxShadow: '0 0 12px rgba(124,111,255,0.4)'
+                                        }} />
+                                    </div>
+                                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
+                                        Sense-making engine is processing your instructions...
+                                    </p>
+                                </div>
+                            ) : (
+                                <button
+                                    className="btn btn-primary"
+                                    style={{ height: 32, padding: '0 16px', fontSize: 12 }}
+                                    onClick={handleModifyCalendar}
+                                    disabled={!calendarInstruction.trim()}
+                                >
+                                    Regenerate Content Matrix
+                                </button>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -1371,6 +1409,7 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
     const [showModifyInput, setShowModifyInput] = useState(false);
     const [modifyError, setModifyError] = useState('');
     const [updateAssets, setUpdateAssets] = useState(false);
+    const [modifyProgress, setModifyProgress] = useState(0);
 
     useEffect(() => {
         if (project.id) {
@@ -1448,6 +1487,17 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
         if (!calendarInstruction.trim()) return;
         setModifyingCalendar(true);
         setModifyError('');
+        setModifyProgress(0);
+
+        // Simulation logic for smooth Apple-style progress
+        const interval = setInterval(() => {
+            setModifyProgress(prev => {
+                if (prev >= 92) return prev; // Hold at 92 until actual finish
+                const increase = Math.random() * 5;
+                return Math.min(prev + increase, 95);
+            });
+        }, 400);
+
         try {
             const res = await fetch('/api/projects/modify-calendar', {
                 method: 'POST',
@@ -1468,6 +1518,11 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
                 }
                 return;
             }
+
+            // Finish the progress
+            setModifyProgress(100);
+            await new Promise(r => setTimeout(r, 600)); // Small delay for the user to see 100%
+
             // Update local state with new calendar and assets (if updated)
             setOutputs(prev => ({
                 ...prev,
@@ -1480,7 +1535,9 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
         } catch (err: any) {
             setModifyError(err.message || 'Something went wrong');
         } finally {
+            clearInterval(interval);
             setModifyingCalendar(false);
+            setModifyProgress(0);
         }
     }
 

@@ -133,29 +133,32 @@ export function deepAnalysisPrompt(
   currentFunnel: FunnelResult,
   currentCalendar: ContentCalendarResult
 ): string {
-  return `You are a Senior Content Strategist and Prompt Engineer at TitanLeap.
-Your Task: Analyze the user's request to modify their 30-day content calendar.
+  return `You are a Senior Content Strategist and Growth Engineer at TitanLeap.
+Your Task: Perform a "DEEP CONCEPTUAL ANALYSIS" on the user's request to modify their 30-day content calendar.
+
+CRITICAL DIRECTIVE: Do NOT just make the content longer. Your goal is to make it "Make More Sense" strategically. 
+Analyze the underlying intent and re-align the entire content strategy to be more cohesive, impactful, and authority-driven.
 
 USER REQUEST: "${userInstruction}"
 
-CONTEXT:
-Core Thesis: ${currentPositioning.positioning_architecture.core_thesis}
-Current Theme: ${currentCalendar.theme_of_month}
-Funnel Goal: ${currentFunnel.lead_magnet_concept.name}
+CURRENT STRATEGIC CONTEXT:
+- Brand Thesis: ${currentPositioning.positioning_architecture.core_thesis}
+- Monthly Theme: ${currentCalendar.theme_of_month}
+- Funnel Mechanism: ${currentFunnel.lead_magnet_concept.name}
 
-DIRECTIONS:
-1. Evaluate Intent: Is the user trying to change the tone, the topic, the platform, or the entire strategy?
-2. Logical Alignment: Does this request conflict with the core brand thesis? If so, adapt it to fit the brand's "Titan" level authority.
-3. Prevent Redundancy: Extract the EXACT "Delta" (what specifically needs to change).
-4. Prompt Enhancement: Expand the user's simple instruction into a detailed strategic brief for the next AI agent.
-5. Critical Gatekeeping: If the request is too vague (e.g., "make it better"), identify what's missing and suggest specific improvements.
+DEEP ANALYSIS REQUIREMENTS:
+1. Intent Decoding: What is the user *actually* trying to achieve? (e.g., Higher authority, better lead flow, more technical depth?)
+2. Strategic Re-Alignment: How does this request shift the psychological journey of the customer?
+3. Conceptual Anchoring: Identify 3 new "Conceptual Anchors" that this request introduces.
+4. Strategic Brief: Write a concise but dense strategic brief that tells the next AI agent EXACTLY how to overhaul the content logic to fulfill this intent.
+5. Gatekeeping: If the request is superficial, challenge it. Refine it into a high-conviction directive.
 
 Return ONLY valid JSON:
 {
   "is_actionable": boolean,
-  "critique": "string - if not actionable, explain why. If actionable, provide a brief strategic note.",
-  "refined_strategic_brief": "string - a detailed brief for the content generator",
-  "recommended_theme": "string - a refined monthly theme based on the request"
+  "critique": "string - Strategic advice or why the query is too vague.",
+  "refined_strategic_brief": "string - DATA-DENSE strategic brief focusing on logic, psychology, and specific content shifts.",
+  "recommended_theme": "string - A high-impact, refined theme name."
 }
 `;
 }
