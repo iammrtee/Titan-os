@@ -59,21 +59,26 @@ export async function POST(req: NextRequest) {
 - Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
                 : '';
 
-            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a DEEP ANALYSIS of BOTH the provided inspiration image and the content idea text to extract its core visual and conceptual DNA.
+            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a HOLISTIC ANALYSIS of the provided inspiration image and the content idea text. You must capture the ENTIRE visual ecosystem (background, environment, lighting, composition) while identifying the primary subject.
+
+            INTELLIGENCE GUIDELINES:
+            - Capture the full "vibe": color grading, background furniture/scenery, and atmospheric effects.
+            - Explicitly identify the "Main Subject" (the person, animal, or central object) so it can be swapped.
             
-            EXTRACT DETAILED VISUAL & CONCEPTUAL DATA:
-            1. primary_color_hex: extract accurate hex codes from the image/content
-            2. secondary_color_hex: extract supporting accent hex codes
-            3. lighting_atmosphere: describe the specific lighting and mood (e.g. "cinematic rim lighting", "soft pastel morning glow")
-            4. texture_material: describe surface qualities (e.g. "frosted refractive glass", "matte obsidian")
-            5. composition_layout: describe spatial arrangement (e.g. "dynamic diagonal tension")
-            6. artistic_style: 1-sentence summary of the medium and aesthetic
-            7. conceptual_anchor: The main visual metaphor derived from analyzing the content idea: ${contentSource}
-            8. primary_3d_object: A stylized 3D object physically representing the anchor: ${contentSource}
-            9. secondary_3d_object: A smaller accent object reinforcing the theme
-            10. headline_line_1: Most impactful part of the text
-            11. headline_line_2: Supporting part of the headline
-            12. supporting_statement: A short subheadline for the footer area
+            EXTRACT DATA:
+            1. primary_color_hex: main dominant hex
+            2. secondary_color_hex: accent hex
+            3. lighting_atmosphere: e.g. "cinematic volumeteric lighting", "neon noir glow"
+            4. texture_material: e.g. "brushed titanium", "iridescent liquid"
+            5. background_environment: describe the background scene/setting in detail (e.g. "a futuristic minimalist laboratory with glowing interfaces")
+            6. composition_layout: e.g. "close-up portrait", "wide-angle dynamic action"
+            7. artistic_style: e.g. "high-end 3D octane render"
+            8. identified_primary_subject: describe the main central figure in the image (e.g. "a female executive", "a sleek robotic panther")
+            9. conceptual_anchor: visual metaphor for: ${contentSource}
+            10. primary_3d_object: stylized 3D object for the anchor: ${contentSource}
+            11. headline_line_1: line 1
+            12. headline_line_2: line 2
+            13. supporting_statement: footer subtext
 
             Output ONLY a JSON object with these EXACT keys.`;
 
@@ -116,7 +121,8 @@ export async function POST(req: NextRequest) {
             let head2 = cleanValue(vars.headline_line_2 || '');
             let sub = cleanValue(vars.supporting_statement || '');
             let obj1 = cleanValue(vars.primary_3d_object || '');
-            let obj2 = cleanValue(vars.secondary_3d_object || '');
+            let identifiedSubject = cleanValue(vars.identified_primary_subject || '');
+
             const anchor = cleanValue(vars.conceptual_anchor || '');
             let logo = cleanValue(projectName || 'The Brand');
 
@@ -124,6 +130,7 @@ export async function POST(req: NextRequest) {
             const activeColor = color || vars.primary_color_hex || vars.primary_color_name || 'deep purple';
             const lighting = cleanValue(vars.lighting_atmosphere || 'professional studio lighting');
             const materials = cleanValue(vars.texture_material || 'premium surfaces');
+            const env = cleanValue(vars.background_environment || 'a sleek professional marketing background');
             const composition = cleanValue(vars.composition_layout || 'modern balanced layout');
             const styleLabel = cleanValue(vars.artistic_style || 'modern marketing aesthetic');
 
@@ -132,22 +139,34 @@ export async function POST(req: NextRequest) {
                 head1 = lines[0] || headlineText;
                 head2 = lines[1] || '';
             }
-            if (primaryObject) obj1 = primaryObject.trim();
             if (logoText) logo = logoText.trim();
             if (footerText) {
                 sub = footerText.trim();
             } else if (headlineText && customContent) {
-                // If headline is manual, map customContent to the supporting statement banner
                 sub = customContent.trim().split('\n')[0];
             }
 
-            // Character details for Style 1 (if provided)
-            const hasCharacter = characterGender || facialExpression || poseDescription;
-            const charDesc = hasCharacter
-                ? `Specifically featuring a ${characterEthnicity || 'any'}-skinned ${characterGender || 'person'} with ${hairStyle || 'natural hair'}, wearing ${outfitDescription || 'stylish professional clothes'}. The character's facial expression is strictly "${facialExpression || 'confident'}" and their pose is "${poseDescription || 'standing'}".`
-                : '';
+            // DYNAMIC SUBJECT SWAPPING LOGIC:
+            // 1. If user provides primaryObject, it REPLACES the identified subject in the existing environment.
+            // 2. If no user object, we use the identified subject or the AI-generated anchor object.
+            let mainSubjectDesc = primaryObject ? primaryObject.trim() : (identifiedSubject || obj1);
 
-            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} ${charDesc} is positioned next to a secondary complementary 3D ${obj2}, visually representing the core idea. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
+            // Integrate character details INTO the main subject if they exist
+            const hasCharacterInput = characterGender || facialExpression || poseDescription;
+            if (hasCharacterInput) {
+                const gender = characterGender || 'person';
+                const ethnicity = characterEthnicity ? `${characterEthnicity} ` : '';
+                const hair = hairStyle ? ` with ${hairStyle} hair` : '';
+                const apparel = outfitDescription ? `, wearing ${outfitDescription}` : '';
+                const expr = facialExpression ? `, expressing ${facialExpression}` : '';
+                const pose = poseDescription ? `, in a ${poseDescription} pose` : '';
+
+                // If user said "Primary 3D Object: A Dragon" and also specified gender/outfit, 
+                // we merge them: "A female dragon wearing a suit"
+                mainSubjectDesc = `${ethnicity}${gender} ${mainSubjectDesc}${hair}${apparel}${expr}${pose}`;
+            }
+
+            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition} within ${env}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold font for the headline: '${head1}'. ${head2 ? `Below it, '${head2}' is placed inside a glowing 3D pill shape.` : ''} A frosted glass banner displays the white sub-text '${sub}'. The central main subject is a hyper-realistic high-detail 3D ${mainSubjectDesc}, rendered perfectly within the environment. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution. Brand signature: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
