@@ -59,27 +59,28 @@ export async function POST(req: NextRequest) {
 - Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
                 : '';
 
-            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a HOLISTIC ANALYSIS of the provided inspiration image and the content idea text. You must capture the ENTIRE visual ecosystem while identifying the primary subject.
+            const templatePrompt = `You are a world-class Visual DNA Analyst. Your task is to perform an EXTREMELY DEEP ANALYSIS of the provided inspiration image and the content idea text. You must decode the image's "Spatial DNA" — its environment, lighting physics, and background elements — while isolating the primary subject for replacement.
 
-            INTELLIGENCE GUIDELINES:
-            - Capture the full "vibe": color grading, background furniture/scenery, and atmospheric effects.
-            - Explicitly identify the "Main Subject" so it can be swapped.
-            - CREATIVE FILLING: If the content idea or image lacks specific details (e.g., background style, material textures, small accents), you MUST creatively invent highly professional, ultra-modern details that elevate the premium 3D aesthetic.
+            STRICT INTELLIGENCE GUIDELINES:
+            1. SUBJECT-ENVIRONMENT SEPARATION: You MUST distinguish between the "Subject" (the central figure/hero) and the "Environment" (the entire background, lighting rigs, atmospheric effects).
+            2. FIDELITY: Capture the full atmospheric DNA (vibe, grain, lens flares, specific background props/furniture).
+            3. CREATIVE FILLING: If user inputs are empty, you MUST invent details that follow the "Artistic DNA" of the image (e.g., if the background is a tech lab, suggest "holographic server racks" as filler).
+            4. DYNAMIC SWAP READINESS: Clearly describe the subject so the generator knows exactly what to delete and replace with the user's "Primary 3D Object".
             
             EXTRACT DATA:
-            1. primary_color_hex: main dominant hex
-            2. secondary_color_hex: accent hex
-            3. lighting_atmosphere: e.g. "cinematic volumeteric lighting"
-            4. texture_material: e.g. "brushed titanium"
-            5. background_environment: describe the setting in detail (e.g. "a futuristic minimalist laboratory")
-            6. composition_layout: e.g. "close-up portrait"
-            7. artistic_style: e.g. "high-end 3D octane render"
-            8. identified_primary_subject: describe the main central figure
+            1. primary_color_hex: dominant theme color
+            2. secondary_color_hex: accent theme color
+            3. lighting_physics: describe the specific light sources, shadows, and reflections
+            4. material_textures: surface qualities of the background and objects
+            5. background_environment_dna: description of the full setting/atmosphere (e.g. "a luxury executive suite with floor-to-ceiling windows and rainy city lights")
+            6. composition_spatial_layout: spatial arrangement of elements
+            7. artistic_aesthetic: the specific rendering style (e.g. "photorealistic octane render with shallow depth of field")
+            8. identified_subject_to_replace: the main figure currently in the image
             9. conceptual_anchor: visual metaphor for: ${contentSource}
-            10. auto_enhanced_details: if details are sparse, suggest 2-3 premium 3D accents (e.g. "floating holographic data streams", "refractive glass shards")
-            11. headline_line_1: line 1
-            12. headline_line_2: line 2
-            13. supporting_statement: footer subtext
+            10. creative_filler_details: 3-4 premium accents to add if the scene feels empty
+            11. headline_line_1: text 1
+            12. headline_line_2: text 2
+            13. supporting_statement: footer text
 
             Output ONLY a JSON object with these EXACT keys.`;
 
@@ -121,20 +122,20 @@ export async function POST(req: NextRequest) {
             let head1 = cleanValue(vars.headline_line_1 || vars.headline_text || '');
             let head2 = cleanValue(vars.headline_line_2 || '');
             let sub = cleanValue(vars.supporting_statement || '');
-            let obj1 = cleanValue(vars.primary_3d_object || '');
-            let identifiedSubject = cleanValue(vars.identified_primary_subject || '');
-            const enhancedDetails = cleanValue(vars.auto_enhanced_details || '');
+            const obj1 = cleanValue(vars.primary_3d_object || '');
+            const identifiedSubject = cleanValue(vars.identified_subject_to_replace || '');
+            const enhancedDetails = cleanValue(vars.creative_filler_details || '');
 
             const anchor = cleanValue(vars.conceptual_anchor || '');
             let logo = cleanValue(projectName || 'The Brand');
 
             // Deep Visual DNA
             const activeColor = color || vars.primary_color_hex || vars.primary_color_name || 'deep purple';
-            const lighting = cleanValue(vars.lighting_atmosphere || 'professional studio lighting');
-            const materials = cleanValue(vars.texture_material || 'premium surfaces');
-            const env = cleanValue(vars.background_environment || 'a sleek professional marketing background');
-            const composition = cleanValue(vars.composition_layout || 'modern balanced layout');
-            const styleLabel = cleanValue(vars.artistic_style || 'modern marketing aesthetic');
+            const lighting = cleanValue(vars.lighting_physics || vars.lighting_atmosphere || 'professional studio lighting');
+            const materials = cleanValue(vars.material_textures || vars.texture_material || 'premium surfaces');
+            const env = cleanValue(vars.background_environment_dna || vars.background_environment || 'a sleek professional marketing background');
+            const composition = cleanValue(vars.composition_spatial_layout || vars.composition_layout || 'modern balanced layout');
+            const styleLabel = cleanValue(vars.artistic_aesthetic || vars.artistic_style || 'modern marketing aesthetic');
 
             if (headlineText) {
                 const lines = headlineText.split('\n').map((l: string) => l.trim()).filter(Boolean);
