@@ -56,28 +56,28 @@ export async function POST(req: NextRequest) {
                 ? `The user has provided a reference image for visual inspiration.
 - You MUST analyze the reference image's color palette, atmosphere, lighting, and composition.
 - Derive the primary colors and visual "vibe" primarily from this reference image.
-- Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
+- Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.
+- CRITICAL: User-provided inputs for BRAND COLORS and PRIMARY OBJECTS must OVERRIDE the reference image. If a brand color is provided, ignore the reference image colors. If a primary object is provided, ignore the reference image subject.`
                 : '';
-
-            const templatePrompt = `You are a world-class Visual DNA Analyst. Your task is to perform an EXTREMELY DEEP ANALYSIS of the provided inspiration image and the content idea text. You must decode the image's "Spatial DNA" — its environment, lighting physics, and background elements — while isolating the primary subject for replacement.
+            const templatePrompt = `You are a world-class Visual DNA Analyst. Your task is to perform an EXTREMELY DEEP ANALYSIS of the provided inspiration image and the content idea text. You must decode the image's "Spatial DNA" — its environment, lighting physics, and background elements.
 
             STRICT INTELLIGENCE GUIDELINES:
-            1. SUBJECT-ENVIRONMENT SEPARATION: You MUST distinguish between the "Subject" (the central figure/hero) and the "Environment" (the entire background, lighting rigs, atmospheric effects).
-            2. FIDELITY: Capture the full atmospheric DNA (vibe, grain, lens flares, specific background props/furniture).
-            3. CREATIVE FILLING: If user inputs are empty, you MUST invent details that follow the "Artistic DNA" of the image (e.g., if the background is a tech lab, suggest "holographic server racks" as filler).
-            4. DYNAMIC SWAP READINESS: Clearly describe the subject so the generator knows exactly what to delete and replace with the user's "Primary 3D Object".
+            1. SUBJECT REPLACEMENT: If the user provides a "Primary 3D Object" (${primaryObject || 'none'}), you MUST surgically REMOVE the original subject from the image's DNA and ONLY focus on the environment/atmosphere.
+            2. COLOR HIERARCHY: If a "Brand Color" exists (${color || 'none'}), it COMPLETELY OVERRIDES EVERY COLOR in the reference image. Rewrite the DNA to match the new color palette perfectly.
+            3. OBJECT SINGULARITY: If a "Primary 3D Object" or "Main Subject" is specified, DO NOT add secondary/filler 3D objects. NO UNRELATED 3D "MARKETING PROPS" (coins, rockets, etc.) allowed. Keep the focus singular and high-authority.
+            4. FIDELITY: Capture the full atmospheric DNA (vibe, grain, specific background props/furniture) of the reference image, but adapt it to the new color and subject.
             
             EXTRACT DATA:
-            1. primary_color_hex: dominant theme color
-            2. secondary_color_hex: accent theme color
-            3. lighting_physics: describe the specific light sources, shadows, and reflections
-            4. material_textures: surface qualities of the background and objects
-            5. background_environment_dna: description of the full setting/atmosphere (e.g. "a luxury executive suite with floor-to-ceiling windows and rainy city lights")
-            6. composition_spatial_layout: spatial arrangement of elements
-            7. artistic_aesthetic: the specific rendering style (e.g. "photorealistic octane render with shallow depth of field")
-            8. identified_subject_to_replace: the main figure currently in the image
+            1. primary_color_hex: MUST be the brand color if provided: ${color || 'derive from image'}
+            2. secondary_color_hex: supporting hex matching the new theme
+            3. lighting_physics: light sources, shadows, and reflections
+            4. material_textures: surface qualities
+            5. background_environment_dna: description of the setting WITHOUT the original subject
+            6. composition_spatial_layout: spatial arrangement
+            7. artistic_aesthetic: rendering style
+            8. identified_subject_to_replace: the main figure to REMOVE
             9. conceptual_anchor: visual metaphor for: ${contentSource}
-            10. creative_filler_details: 3-4 premium accents to add if the scene feels empty
+            10. creative_filler_details: ONLY add if it enhances the background environment; DO NOT add objects competing with the primary subject.
             11. headline_line_1: text 1
             12. headline_line_2: text 2
             13. supporting_statement: footer text
@@ -111,9 +111,9 @@ export async function POST(req: NextRequest) {
                 },
             });
 
-            const cleanValue = (s: string) => {
+            const cleanValue = (s: any) => {
                 if (!s) return '';
-                return s.replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
+                return String(s).replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
             };
 
             const vars = JSON.parse(geminiResponse.text || '{}');
@@ -169,7 +169,11 @@ export async function POST(req: NextRequest) {
             // Final scene enhancement
             const sceneAccents = enhancedDetails ? ` The scene is further elevated with ${enhancedDetails}.` : '';
 
-            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition} within ${env}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}.${sceneAccents} The top half features massive, clean, rounded white 3D letters in a bold font for the headline: '${head1}'. ${head2 ? `Below it, '${head2}' is placed inside a glowing 3D pill shape.` : ''} A frosted glass banner displays the white sub-text '${sub}'. The central main subject is a hyper-realistic high-detail 3D ${mainSubjectDesc}, rendered perfectly within the environment. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution. Brand signature: "${logo}".`;
+            // STRICT OVERRIDE FOR GENERATION MODEL
+            const colorStrictness = color ? ` CRITICAL: The ENTIRE color palette of the image (background, subject, accents) MUST strictly be "${color}". IGNORE all other colors.` : '';
+            const objectStrictness = primaryObject ? ` CRITICAL: The ONLY 3D object in focus is the ${primaryObject.trim()}. DO NOT include any other 3D props or secondary objects from the reference image.` : '';
+
+            finalPrompt = `An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette.${colorStrictness} The composition is ${composition} within ${env}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}.${sceneAccents}${objectStrictness} The top half features massive, clean, rounded white 3D letters in a bold font for the headline: '${head1}'. ${head2 ? `Below it, '${head2}' is placed inside a glowing 3D pill shape.` : ''} A frosted glass banner displays the white sub-text '${sub}'. The central main subject is a hyper-realistic high-detail 3D ${mainSubjectDesc}, rendered perfectly within the environment. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution. Brand signature: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -272,9 +276,9 @@ export async function POST(req: NextRequest) {
                 },
             });
 
-            const cleanValue = (s: string) => {
+            const cleanValue = (s: any) => {
                 if (!s) return '';
-                return s.replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
+                return String(s).replace(/[—\-_:*]/g, '').replace(/["'*]/g, '').trim();
             };
 
             const vars = JSON.parse(geminiResponse.text || '{}');
@@ -384,9 +388,9 @@ Derive ALL colors from this single brand color:
                 },
             });
 
-            const cleanValue = (s: string) => {
+            const cleanValue = (s: any) => {
                 if (!s) return '';
-                return s.replace(/[—\-_:*]/g, '').replace(/^(TYPOGRAPHY|HEADLINE|LINE|TEXT|LABEL|PART|DESCRIPTION|BACKGROUND|SUBJECT|H1|H2|SUB)\s*\d*/gi, '').replace(/["'*]/g, '').trim();
+                return String(s).replace(/[—\-_:*]/g, '').replace(/^(TYPOGRAPHY|HEADLINE|LINE|TEXT|LABEL|PART|DESCRIPTION|BACKGROUND|SUBJECT|H1|H2|SUB)\s*\d*/gi, '').replace(/["'*]/g, '').trim();
             };
 
             const vars = JSON.parse(geminiResponse.text || '{}');
