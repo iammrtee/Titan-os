@@ -339,7 +339,16 @@ function ContentTab({
     campaigns,
     selectedCampaignId,
     setSelectedCampaignId,
-    onCampaignCreated
+    onCampaignCreated,
+    handleModifyCalendar,
+    modifyingCalendar,
+    calendarInstruction,
+    setCalendarInstruction,
+    showModifyInput,
+    setShowModifyInput,
+    modifyError,
+    updateAssets,
+    setUpdateAssets,
 }: {
     data: ContentCalendarResult | null | undefined,
     projectName: string,
@@ -347,7 +356,16 @@ function ContentTab({
     campaigns: any[],
     selectedCampaignId: string,
     setSelectedCampaignId: (id: string) => void,
-    onCampaignCreated?: (newId?: string) => void
+    onCampaignCreated?: (newId?: string) => void,
+    handleModifyCalendar: () => Promise<void>,
+    modifyingCalendar: boolean,
+    calendarInstruction: string,
+    setCalendarInstruction: (val: string) => void,
+    showModifyInput: boolean,
+    setShowModifyInput: (val: boolean) => void,
+    modifyError: string,
+    updateAssets: boolean,
+    setUpdateAssets: (val: boolean) => void,
 }) {
     const [selectedStyle, setSelectedStyle] = useState('style-1');
     const [customColor, setCustomColor] = useState('');
@@ -1176,8 +1194,57 @@ function ContentTab({
 
             {/* ── Content Calendar ── */}
             <div className="card" style={{ marginBottom: 16, borderColor: 'var(--accent-border)', background: 'var(--accent-subtle)' }}>
-                <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginBottom: 4 }}>MONTHLY THEME</p>
-                <p style={{ fontWeight: 600 }}>{data.theme_of_month}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>MONTHLY THEME</p>
+                    <button
+                        onClick={() => setShowModifyInput(!showModifyInput)}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                        {showModifyInput ? '✕ CANCEL' : '✨ MODIFY'}
+                    </button>
+                </div>
+
+                {showModifyInput ? (
+                    <div style={{ marginTop: 12 }}>
+                        <textarea
+                            className="input"
+                            placeholder="e.g. Focus more on B2B lead generation, make the tone more technical..."
+                            value={calendarInstruction}
+                            onChange={(e) => setCalendarInstruction(e.target.value)}
+                            style={{ width: '100%', height: 80, fontSize: 13, padding: 12, borderRadius: 8, background: 'var(--bg-primary)', border: '1px solid var(--accent-border)' }}
+                        />
+
+                        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input
+                                type="checkbox"
+                                id="updateAssets"
+                                checked={updateAssets}
+                                onChange={e => setUpdateAssets(e.target.checked)}
+                                style={{ width: 16, height: 16, cursor: 'pointer' }}
+                            />
+                            <label htmlFor="updateAssets" style={{ fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                                Also update Creative Assets (Video Scripts, etc.) — <span style={{ color: 'var(--text-muted)' }}>Heavy Generation</span>
+                            </label>
+                        </div>
+                        {modifyError && (
+                            <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 6, fontSize: 12, color: 'var(--error)' }}>
+                                ⚠️ <strong>Critique:</strong> {modifyError}
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                            <button
+                                className="btn btn-primary"
+                                style={{ height: 32, padding: '0 16px', fontSize: 12 }}
+                                onClick={handleModifyCalendar}
+                                disabled={modifyingCalendar || !calendarInstruction.trim()}
+                            >
+                                {modifyingCalendar ? 'Refining Strategy...' : 'Regenerate Content Matrix'}
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <p style={{ fontWeight: 600, margin: 0 }}>{data.theme_of_month}</p>
+                )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1297,6 +1364,10 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
     const [projectCampaigns, setProjectCampaigns] = useState<any[]>([]);
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
+    const [modifyingCalendar, setModifyingCalendar] = useState(false);
+    const [calendarInstruction, setCalendarInstruction] = useState('');
+    const [showModifyInput, setShowModifyInput] = useState(false);
+    const [modifyError, setModifyError] = useState('');
 
     useEffect(() => {
         if (project.id) {
@@ -1368,6 +1439,46 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    async function handleModifyCalendar() {
+        if (!calendarInstruction.trim()) return;
+        setModifyingCalendar(true);
+        setModifyError('');
+        try {
+            const res = await fetch('/api/projects/modify-calendar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectId: project.id,
+                    customInstruction: calendarInstruction,
+                    updateAssets: updateAssets
+                }),
+            });
+            const result = await res.json();
+            if (!res.ok) {
+                // If the error is 'vague_prompt', we show the critique nicely
+                if (result.reason === 'vague_prompt') {
+                    setModifyError(result.error);
+                } else {
+                    throw new Error(result.error || 'Modification failed');
+                }
+                return;
+            }
+            // Update local state with new calendar and assets (if updated)
+            setOutputs(prev => ({
+                ...prev,
+                calendar: { calendar_json: result.data.calendar },
+                assets: result.data.assets ? { assets_json: result.data.assets } : prev.assets
+            }));
+            setShowModifyInput(false);
+            setCalendarInstruction('');
+            setUpdateAssets(false);
+        } catch (err: any) {
+            setModifyError(err.message || 'Something went wrong');
+        } finally {
+            setModifyingCalendar(false);
+        }
+    }
 
     async function startGeneration() {
         setGenerating(true);
@@ -1628,6 +1739,15 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
                                         selectedCampaignId={selectedCampaignId}
                                         setSelectedCampaignId={setSelectedCampaignId}
                                         onCampaignCreated={fetchProjectCampaigns}
+                                        handleModifyCalendar={handleModifyCalendar}
+                                        modifyingCalendar={modifyingCalendar}
+                                        calendarInstruction={calendarInstruction}
+                                        setCalendarInstruction={setCalendarInstruction}
+                                        showModifyInput={showModifyInput}
+                                        setShowModifyInput={setShowModifyInput}
+                                        modifyError={modifyError}
+                                        updateAssets={updateAssets}
+                                        setUpdateAssets={setUpdateAssets}
                                     />
                                 )}
                                 {activeTab === 'content' && <ContentAssetsTab data={outputs.assets?.assets_json} />}

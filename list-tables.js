@@ -1,9 +1,10 @@
+require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 
-const URL = "https://lvplnbjkflpbzceznxaf.supabase.co";
-const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cGxuYmprZmxwYnpjZXpueGFmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTg2ODc1NywiZXhwIjoyMDg3NDQ0NzU3fQ.0Ic4MG0TKkKkB-jqIqUjhd0ze7Tsyi8XT9Bkmnmsk2Y";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(URL, KEY);
+const supabase = createClient(SUPABASE_URL, KEY);
 
 async function listTables() {
     console.log('--- LISTING TABLES ---');

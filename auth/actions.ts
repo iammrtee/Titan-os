@@ -13,18 +13,32 @@ const getOrigin = async () => {
 };
 
 export async function login(formData: FormData) {
-    const supabase = await createClient();
+    try {
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+            return { error: 'Supabase configuration is missing. Please check your environment variables.' };
+        }
 
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+        const supabase = await createClient();
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
 
-    if (error) {
-        return { error: error.message };
+        if (!email || !password) {
+            return { error: 'Email and password are required.' };
+        }
+
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            return { error: error.message };
+        }
+
+        revalidatePath('/', 'layout');
+    } catch (err: any) {
+        console.error('Login error:', err);
+        return { error: 'An unexpected error occurred during sign in. Please try again later.' };
     }
 
-    revalidatePath('/', 'layout');
     redirect('/dashboard');
 }
 

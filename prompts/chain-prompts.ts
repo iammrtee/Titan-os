@@ -125,6 +125,41 @@ Return ONLY valid JSON with this exact structure:
 }`;
 }
 
+// ─── Step 4.5: Deep Analysis (Modification Refinement) ────────────────
+
+export function deepAnalysisPrompt(
+  userInstruction: string,
+  currentPositioning: PositioningResult,
+  currentFunnel: FunnelResult,
+  currentCalendar: ContentCalendarResult
+): string {
+  return `You are a Senior Content Strategist and Prompt Engineer at TitanLeap.
+Your Task: Analyze the user's request to modify their 30-day content calendar.
+
+USER REQUEST: "${userInstruction}"
+
+CONTEXT:
+Core Thesis: ${currentPositioning.positioning_architecture.core_thesis}
+Current Theme: ${currentCalendar.theme_of_month}
+Funnel Goal: ${currentFunnel.lead_magnet_concept.name}
+
+DIRECTIONS:
+1. Evaluate Intent: Is the user trying to change the tone, the topic, the platform, or the entire strategy?
+2. Logical Alignment: Does this request conflict with the core brand thesis? If so, adapt it to fit the brand's "Titan" level authority.
+3. Prevent Redundancy: Extract the EXACT "Delta" (what specifically needs to change).
+4. Prompt Enhancement: Expand the user's simple instruction into a detailed strategic brief for the next AI agent.
+5. Critical Gatekeeping: If the request is too vague (e.g., "make it better"), identify what's missing and suggest specific improvements.
+
+Return ONLY valid JSON:
+{
+  "is_actionable": boolean,
+  "critique": "string - if not actionable, explain why. If actionable, provide a brief strategic note.",
+  "refined_strategic_brief": "string - a detailed brief for the content generator",
+  "recommended_theme": "string - a refined monthly theme based on the request"
+}
+`;
+}
+
 // ─── Step 5: Content Calendar (Titan Growth Engine) ───────────────────
 
 export function contentCalendarPrompt(
@@ -133,9 +168,14 @@ export function contentCalendarPrompt(
   businessName: string,
   niche: string,
   targetAudience: string,
+  customRefinementBrief?: string,
 ): string {
+  const refinementSection = customRefinementBrief
+    ? `\n🚀 CUSTOM REFINEMENT BRIEF (PRIORITY):\n${customRefinementBrief}\n`
+    : '';
+
   return `You are a Head of Content at TitanLeap. 
-Generate a 30-day high-performance content calendar for ${businessName}.
+Generate a 30-day high-performance content calendar for ${businessName}.${refinementSection}
 
 🎯 STRATEGIC CONTEXT:
 Industry: ${niche}
