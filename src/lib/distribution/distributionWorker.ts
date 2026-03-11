@@ -96,9 +96,14 @@ export async function processDistributionJobs() {
                     ? `social_accounts table unavailable (${accountError.message})`
                     : `No ${job.platform} account connected`;
                 console.log(`[Worker] Job ${job.id} → resetting to pending: ${reason}`);
+                const backoffTime = new Date(Date.now() + 1000 * 60 * 60).toISOString(); // 1 hour backoff
                 await supabase
                     .from('distribution_jobs')
-                    .update({ status: 'pending', error_message: null })
+                    .update({ 
+                        status: 'pending', 
+                        error_message: reason,
+                        scheduled_time: backoffTime
+                    })
                     .eq('id', job.id);
                 return;
             }

@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
         const { data: campaigns, error } = await supabase
             .from('campaigns')
             .select('id, status, flyer_image_url, created_at, project_id, projects!inner(id, name), campaign_assets(asset_url)')
-            .eq('projects.user_id', user.id)
             .match(projectId ? { project_id: projectId } : {})
             .order('created_at', { ascending: false });
 

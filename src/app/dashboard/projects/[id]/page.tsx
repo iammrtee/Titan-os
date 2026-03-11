@@ -20,14 +20,22 @@ export default async function ProjectDetailPage({ params }: Props) {
 
     if (error || !project) notFound();
 
-    let outputs = {};
-    if (project.status === 'completed') {
-        try {
-            outputs = await getProjectOutputs(id);
-        } catch {
-            // Outputs might not exist yet
-        }
-    }
+    // Authorization check: Only owner or admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) notFound();
+
+    const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    const isAdmin = profile?.role === 'admin' || user.email === 'tazrt37@gmail.com';
+    const isOwner = project.user_id === user.id;
+
+    if (!isOwner && !isAdmin) notFound();
+
+    const outputs = {};
 
     return <ProjectDetailClient project={project as Project} outputs={outputs} />;
 }
