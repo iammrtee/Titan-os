@@ -634,7 +634,7 @@ function ContentTab({
             if (result.success && result.image) {
                 setCustomFlyerUrl(result.image);
 
-                // AUTOMATION: Automatically add to campaign and queue
+                // AUTOMATION: Automatically add to campaign
                 if (selectedCampaignId) {
                     const assetRes = await fetch('/api/campaigns/assets', {
                         method: 'POST',
@@ -650,22 +650,7 @@ function ContentTab({
 
                     if (assetData.success && assetData.asset?.id) {
                         setAssetAdded(true);
-                        // Auto-Queue for 4 platforms
-                        const platforms = ['instagram', 'linkedin', 'facebook', 'tiktok'];
-                        await Promise.all(platforms.map(platform =>
-                            fetch('/api/distribution/schedule', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    campaignId: selectedCampaignId,
-                                    assetId: assetData.asset.id,
-                                    platform,
-                                    scheduledTime: new Date().toISOString(),
-                                    metadata: { autoQueued: true }
-                                })
-                            })
-                        ));
-                        console.log("Automatically added to campaign and queued for 4 platforms.");
+                        console.log("Automatically added to campaign assets.");
                     }
                 }
             } else {

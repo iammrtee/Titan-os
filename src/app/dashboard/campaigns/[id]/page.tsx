@@ -157,6 +157,29 @@ export default function CampaignDetailPage() {
         fetchSocialAccounts();
     };
 
+    const handleClearQueue = async () => {
+        if (!confirm('Are you sure you want to clear the distribution queue? This will remove all pending and failed jobs.')) return;
+        
+        showToast('Clearing queue...', 'info', 'Purging distribution database...');
+        try {
+            const res = await fetch('/api/distribution/clear-queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaignId: id })
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast('Queue Cleared', 'success', 'All pending/failed jobs removed');
+                fetchCampaignData();
+            } else {
+                showToast('Action Failed', 'error', result.error || 'Could not clear queue');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('System Error', 'error', 'Failed to reach distribution server');
+        }
+    };
+
     const handleScheduleDistribution = async (assetId: string, platform: string, isSilent = false) => {
         if (!isSilent) {
             setScheduling(assetId + platform);
@@ -525,15 +548,26 @@ export default function CampaignDetailPage() {
                         <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>
                             {distributionJobs.length} distribution jobs in queue
                         </p>
-                        {distributionJobs.length > 0 && (
-                            <button
-                                className="btn btn-secondary"
-                                onClick={() => fetchCampaignData()}
-                                style={{ fontSize: 12, padding: '6px 14px' }}
-                            >
-                                🔄 Refresh Status
-                            </button>
-                        )}
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                            {distributionJobs.length > 0 && (
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={handleClearQueue}
+                                    style={{ fontSize: 12, padding: '6px 14px', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' }}
+                                >
+                                    🗑️ Clear Queue
+                                </button>
+                            )}
+                            {distributionJobs.length > 0 && (
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => fetchCampaignData()}
+                                    style={{ fontSize: 12, padding: '6px 14px' }}
+                                >
+                                    🔄 Refresh Status
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>

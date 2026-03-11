@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
             - You MUST create a unique VISUAL METAPHOR that bridges the image's aesthetic with the PROMPT'S core idea.
             - If a "Primary Subject" is specified in overrides above, you MUST use that subject. 
             - If the Primary Subject is different from the image (e.g. Image=Sheep, Subject=Cow), re-imagine the Cow with the Sheep's exact aesthetic properties (e.g. woolly texture, soft lighting).
+            - [MANDATORY] TEXT PLACEMENT ANALYSIS: Analyze where the MAIN HEADLINE is positioned in the reference image (e.g., "top-third", "bottom-third", "center-focused", "vertically centered"). You MUST capture this precisely.
             
             EXTRACT DATA:
             1. primary_color_hex: extract accurate hex codes from the image/content
@@ -79,12 +80,13 @@ export async function POST(req: NextRequest) {
             4. texture_material: describe surface qualities (e.g. "frosted refractive glass", "matte obsidian")
             5. composition_layout: describe spatial arrangement (e.g. "dynamic diagonal tension")
             6. artistic_style: 1-sentence summary of the medium and aesthetic
-            7. conceptual_anchor: A sophisticated visual metaphor that blends the PROMPT's meaning with the IMAGE's subject.
+            7. conceptual_anchor: A sophisticated visual metaphor that blends the PROMPT'S meaning with the IMAGE's subject.
             8. primary_3d_object: Describe the SYNTHESIZED subject in high detail. (e.g. "A hyper-realistic 3D ${primaryObject || 'Synthesized Object'} representing the concept of: ${activeTopic}").
             9. secondary_3d_object: A smaller accent object reinforcing the transition from ${topic || 'old'} to ${core_message || 'new'}.
             10. headline_line_1: Most punchy, high-authority part of the headline (Max 4 words)
             11. headline_line_2: Supporting part of the headline
-            12. supporting_statement: A short subheadline/banner text mirroring the prompt's core logic: "${activeTopic}".
+            12. headline_position_description: A short phrase describing where the headline text should be positioned to mimic the reference image (e.g. "The top half", "The bottom half", "The middle section", "The upper third").
+            13. supporting_statement: A short subheadline/banner text mirroring the prompt's core logic: "${activeTopic}".
 
             Output ONLY a JSON object with these EXACT keys.`;
 
@@ -130,6 +132,7 @@ export async function POST(req: NextRequest) {
             let obj2 = cleanValue(vars.secondary_3d_object || '');
             const anchor = cleanValue(vars.conceptual_anchor || '');
             let logo = cleanValue(projectName || 'The Brand');
+            const headlinePos = cleanValue(vars.headline_position_description || 'The top third');
 
             // Deep Visual DNA
             const activeColor = color || vars.primary_color_hex || vars.primary_color_name || 'deep purple';
@@ -174,7 +177,7 @@ export async function POST(req: NextRequest) {
                 ? `\n[SUBJECT REPLACEMENT]: IMPORTANT! Do NOT use the physical subject from the reference image. Instead, use a high-detail 3D ${obj1}. The reference image should ONLY be used for lighting, color, and material inspiration.\n`
                 : '';
 
-            finalPrompt = `${subjectDirective}An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} ${charDesc} is positioned next to a secondary complementary 3D ${obj2}, visually representing the core idea. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
+            finalPrompt = `${subjectDirective}An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. ${headlinePos} features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} ${charDesc} is positioned next to a secondary complementary 3D ${obj2}, visually representing the core idea. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -289,12 +292,23 @@ export async function POST(req: NextRequest) {
               "RIBBON_STYLE": "dynamic swoosh ribbon"
             }`;
 
-            const geminiContents = referenceImageUrl 
-                ? [
-                    { text: templatePrompt },
-                    { inlineData: { data: (await (await (await fetch(referenceImageUrl)).arrayBuffer())).toString('base64'), mimeType: 'image/jpeg' } }
-                  ]
-                : templatePrompt;
+            let geminiContents: any = templatePrompt;
+
+            if (referenceImageUrl) {
+                try {
+                    const imgRes = await fetch(referenceImageUrl);
+                    const buffer = await imgRes.arrayBuffer();
+                    const b64 = Buffer.from(buffer).toString('base64');
+                    const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+
+                    geminiContents = [
+                        { text: templatePrompt },
+                        { inlineData: { data: b64, mimeType: mime } }
+                    ];
+                } catch (err) {
+                    console.error("[FlyerGen] Style 2 ref image fetch failed:", err);
+                }
+            }
 
             const geminiResponse = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
@@ -379,48 +393,59 @@ export async function POST(req: NextRequest) {
             const s3ColorGuide = color
                 ? `BRAND COLOR INPUT: "${color}"
 Derive ALL colors from this single brand color:
-- bg_color       → The brand color at FULL saturation, vivid and bold — NOT near-black (e.g. green → #2d7a32, blue → #1565c0, orange → #d45500, purple → #7b1fa2). This is a solid flat 2D background.
-- accent_color   → A vivid complementary pop color with HIGH contrast against bg_color (e.g. bright yellow against green/purple, hot pink against teal, electric lime against navy).
-- shape_color    → A lighter/translucent tone of bg_color for 2D geometric shapes and flat overlapping blocks.
-- text_color     → Always pure white #ffffff.`
+- bg_color       → The brand color at FULL saturation, vivid and bold. Use a deep, gritty film grain / noise texture for this background.
+- accent_color   → A vivid electric lime or bright yellow for dynamic elements.
+- shape_color    → A lighter version of the brand color for geometric blocks.
+- text_color     → Pure white #ffffff.`
                 : `No brand color specified. Use these defaults:
-- bg_color     → #7b1fa2 (deep vivid purple)
-- accent_color → #f5c800 (bright yellow)
+- bg_color     → #2d7a32 (deep vivid forest green)
+- accent_color → #d4ff00 (electric lime)
 - shape_color  → rgba(255,255,255,0.12)
 - text_color   → #ffffff`;
 
             const templatePrompt = `You are a world-class Art Director and Visual Strategist. 
-            Perform a DEEP CONCEPTUAL SYNTHESIS between the content and the vision DNA.
-            ${referenceImageUrl ? 'REFERENCE IMAGE PROVIDED: Analyze the aesthetic DNA (lighting, color, style) and blend it with the content.' : ''}
+            Synthesize an energetic 3D celebration poster.
+            REFERENCE STYLE: Heavy tactile background noise/grain, bold white typography, expressive joyful 3D character, white 3D shopping cart focus, and winding dynamic bright yellow/lime ribbons.
 
             ${s3ColorGuide}
 
             Output ONLY a JSON object:
             {
-              "VISUAL_METAPHOR": "a strong visual metaphor bridging the idea and style",
-              "EMOTIONAL_CORE": "the core feeling of the piece (e.g. 'high-energy breakthrough', 'serene elite clarity')",
-              "label": "short 2-3 word category label (e.g. GROWTH HACK, NEW LAUNCH)",
-              "h1": "main bold headline — short punchy line 1",
-              "h2": "headline continuation — line 2 (can be empty string if not needed)",
+              "VISUAL_METAPHOR": "a visual metaphor (e.g. 'the speed of commerce', 'celebrating users')",
+              "RIBBON_DESCRIPTION": "vivid yellow winding silk ribbons wrapping around the scene",
+              "label": "short 2-3 word category label (e.g. USER MILESTONE, NEW LAUNCH)",
+              "h1": "main bold headline",
+              "h2": "headline continuation",
               "sub": "one short supporting subtext line",
               "CHARACTER_GENDER": "${characterGender || 'male/female/non-binary'}",
               "CHARACTER_ETHNICITY": "${characterEthnicity || 'any'}",
-              "HAIR_STYLE": "${hairStyle || 'natural style'}",
-              "OUTFIT_DESCRIPTION": "${outfitDescription || 'stylish casual outfit'}",
-              "FACIAL_EXPRESSION": "${facialExpression || 'bold confident smile'}",
-              "POSE_DESCRIPTION": "${poseDescription || 'standing forward-facing, arms open'}",
-              "PRIMARY_OBJECT": "${primaryObject || 'relevant 3D prop or product'}",
+              "HAIR_STYLE": "${hairStyle || 'natural hair'}",
+              "OUTFIT_DESCRIPTION": "${outfitDescription || 'stylish casual professional'}",
+              "FACIAL_EXPRESSION": "${facialExpression || 'joyful celebratory smile'}",
+              "POSE_DESCRIPTION": "${poseDescription || 'celebrating with arms raised'}",
+              "PRIMARY_OBJECT": "${primaryObject || 'white 3D shopping cart'}",
               "CTA_TEXT": "${ctaButtonText || 'Get Started'}",
               "LOGO_TEXT": "${logoText || projectName || 'The Brand'}",
               "FOOTER_TEXT": "${footerText || 'tagline or website'}"
             }`;
 
-            const geminiContents = referenceImageUrl 
-                ? [
-                    { text: templatePrompt },
-                    { inlineData: { data: (await (await (await fetch(referenceImageUrl)).arrayBuffer())).toString('base64'), mimeType: 'image/jpeg' } }
-                  ]
-                : templatePrompt;
+            let geminiContents: any = templatePrompt;
+
+            if (referenceImageUrl) {
+                try {
+                    const imgRes = await fetch(referenceImageUrl);
+                    const buffer = await imgRes.arrayBuffer();
+                    const b64 = Buffer.from(buffer).toString('base64');
+                    const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+
+                    geminiContents = [
+                        { text: templatePrompt },
+                        { inlineData: { data: b64, mimeType: mime } }
+                    ];
+                } catch (err) {
+                    console.error("[FlyerGen] Style 3 ref image fetch failed:", err);
+                }
+            }
 
             const geminiResponse = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
@@ -491,7 +516,18 @@ Derive ALL colors from this single brand color:
                 : '';
 
             // 2D3D hybrid: flat 2D layout elements + photorealistic 3D subject breaking the plane
-            finalPrompt = `${subjectDirective}A bold 2D3D hybrid marketing poster themed around "${vars.VISUAL_METAPHOR || 'innovation'}". The background is a single flat solid ${color || 'vivid deep purple'} color capturing a "${vars.EMOTIONAL_CORE || 'dynamic breakthrough'}" mood. Overlaying the flat BG are bold 2D graphic design elements: ${labelSegment}massive clean sans-serif white flat typography reading "${h1}"${h2 ? ` then "${h2}"` : ''} stacked in large blocks, a thin flat horizontal rule as a divider, and small flat white text "${sub}". In the lower-center of the composition, a single hyper-realistic photorealistic 3D rendered character — specifically a ${eth}-skinned ${gen}, with ${hair} hair, wearing a ${outfit}, facial expression: ${face}, posed as: ${pose}, next to a 3D ${obj} — bursts forward out of the flat background. The 3D figure has full cinematic lighting and subsurface scattering. At the bottom: a flat 2D pill button with bold white text "${cta}", the logo text "${logo}" in clean sans-serif, and small footer text "${footer}". The result is a sharp contrast between the 2D layout and the photorealistic 3D character. 8K resolution.`;
+            finalPrompt = `[STYLE DNA]: 2D3D Hybrid Celebration.
+            ${subjectDirective}
+            The background is a solid flat ${color || 'vivid deep color'} surface with heavy tactile film grain and noise texture. 
+            A subtle white grid is drawn on the floor level.
+            In the center, a hyper-realistic photorealistic 3D ${eth}-skinned ${gen} (${hair} hair, ${outfit}, expression: ${face}, pose: ${pose}) is interacting with a high-detail white 3D ${obj}. 
+            Energetic winding dynamic "${vars.RIBBON_DESCRIPTION || 'vivid lime ribbons'}" swirl around the character and the object, creating a celebratory flow.
+            Overlaying this 3D scene are massive flat 2D typography elements: 
+            - Bold white sans-serif headline: "${h1}" ${h2 ? ` and "${h2}"` : ''}
+            - Flat subtext: "${sub}"
+            - ${labelSegment ? `Pill label: "${label}", ` : ''}
+            Cinematic studio lighting, sharp caustics on the floor, 8K resolution.
+            At the bottom: a flat white button "${cta}", logo "${logo}", and small text "${footer}".`;
 
             console.log("Style 3 2D3D Hybrid:", finalPrompt);
 
@@ -529,31 +565,51 @@ Derive ALL colors from this single brand color:
 
         while (attempts < maxAttempts) {
             try {
+                console.log(`[FlyerGen] Attempting image generation (Attempt ${attempts + 1})...`);
+                
                 // gemini-3.1-flash-image-preview is the correct model for image generation
-                // Must use generateContent (NOT generateImages which hits the Imagen predict endpoint)
                 const imgResponse = await ai.models.generateContent({
                     model: 'gemini-3.1-flash-image-preview',
                     contents: generationContents,
                 });
 
-                // Extract the image part from the response
-                const parts = imgResponse?.candidates?.[0]?.content?.parts ?? [];
+                // Robust extraction of image part
+                const candidates = imgResponse?.candidates || [];
+                if (candidates.length === 0) {
+                    throw new Error('Gemini returned no candidates for the generated image.');
+                }
+
+                const parts = candidates[0]?.content?.parts || [];
+                console.log(`[FlyerGen] Received ${parts.length} parts from Gemini.`);
+
                 for (const part of parts) {
+                    // Check for inlineData (standard for flash-image-preview)
                     if ((part as any).inlineData?.data) {
                         imageBase64 = (part as any).inlineData.data;
                         imageMime = (part as any).inlineData.mimeType || 'image/jpeg';
+                        if (imageBase64) {
+                            console.log(`[FlyerGen] Successfully extracted ${imageMime} (${Math.round(imageBase64.length / 1024)} KB)`);
+                        }
                         break;
+                    }
+                    // Check for fileData (if future-proofed)
+                    if ((part as any).fileData?.fileUri) {
+                        console.warn('[FlyerGen] Received fileUri instead of inlineData. This flow might require extra retrieval steps.');
                     }
                 }
 
-                if (!imageBase64) throw new Error('No image data in response parts.');
+                if (!imageBase64) {
+                    console.error('[FlyerGen] Parts analysis:', JSON.stringify(parts, null, 2));
+                    throw new Error('No image data found in response parts.');
+                }
                 break; // Success!
             } catch (err: any) {
                 attempts++;
                 const isRateLimit = err?.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED');
+                console.error(`[FlyerGen] Error on attempt ${attempts}:`, err.message);
 
                 if (isRateLimit && attempts < maxAttempts) {
-                    console.log(`Rate limit hit(429).Retrying attempt ${attempts + 1}/${maxAttempts}...`);
+                    console.log(`Rate limit hit (429). Retrying in 2s...`);
                     await sleep(2000);
                     continue;
                 }
@@ -562,7 +618,7 @@ Derive ALL colors from this single brand color:
         }
 
         if (!imageBase64) {
-            throw new Error('No image data returned from the model.');
+            throw new Error('Critical: Image generation flow failed to produce a base64 string.');
         }
 
         return NextResponse.json({
