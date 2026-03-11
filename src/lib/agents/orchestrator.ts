@@ -1,10 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
+import { createMockAdminClient, isBypassEnabled } from '@/supabase/mock';
 import { runStrategyAgent } from './strategyAgent';
 import { runContentAgent } from './contentAgent';
 import { runCalendarAgent } from './calendarAgent';
 
 // Service role client for server-side writes
 function getServiceClient() {
+    if (isBypassEnabled()) {
+        return createMockAdminClient();
+    }
+
     return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!

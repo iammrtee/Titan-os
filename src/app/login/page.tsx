@@ -1,147 +1,169 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { login } from '@/auth/actions';
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { login, signup } from "@/auth/actions";
 
 export default function LoginPage() {
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("login");
 
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
-        const formData = new FormData(e.currentTarget);
-        const result = await login(formData);
+    const formData = new FormData(e.currentTarget);
+    const result =
+      mode === "login" ? await login(formData) : await signup(formData);
 
-        if (result?.error) {
-            setError(result.error);
-            setLoading(false);
-        }
+    if (!result) {
+      setLoading(false);
+      return;
     }
 
-    return (
-        <div className="auth-page">
-            <div className="auth-card">
-                {/* Logo */}
-                <div style={{ marginBottom: 32, textAlign: 'center' }}>
-                    <div
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            marginBottom: 8,
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 10,
-                                background: 'linear-gradient(135deg, #7c6fff, #4f46e5)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontWeight: 700,
-                                fontSize: 16,
-                                color: '#fff',
-                            }}
-                        >
-                            T
-                        </div>
-                        <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--text-primary)' }}>
-                            TitanOS
-                        </span>
-                    </div>
-                    <h1 style={{ fontSize: 22, marginBottom: 6 }}>Welcome back</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-                        Sign in to your account
-                    </p>
-                </div>
+    if ("error" in result && result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
 
-                {/* Form */}
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label className="label" htmlFor="email">
-                            Email
-                        </label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            className="input"
-                            placeholder="you@company.com"
-                            required
-                            autoComplete="email"
-                        />
-                    </div>
+    if (mode === "signup" && "success" in result && result.success) {
+      setSuccess(result.success);
+      setLoading(false);
+    }
+  }
 
-                    <div className="form-group">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                            <label className="label" htmlFor="password" style={{ marginBottom: 0 }}>
-                                Password
-                            </label>
-                            <Link href="/login/forgot-password" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, textDecoration: 'none' }}>
-                                Forgot password?
-                            </Link>
-                        </div>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            className="input"
-                            placeholder="••••••••"
-                            required
-                            autoComplete="current-password"
-                        />
-                    </div>
+  const isLogin = mode === "login";
 
-                    {error && (
-                        <div
-                            style={{
-                                padding: '10px 12px',
-                                background: 'var(--error-subtle)',
-                                border: '1px solid rgba(239,68,68,0.2)',
-                                borderRadius: 'var(--radius-sm)',
-                                color: 'var(--error)',
-                                fontSize: 13,
-                                marginBottom: 16,
-                            }}
-                        >
-                            {error}
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        className="btn btn-primary btn-lg"
-                        style={{ width: '100%', justifyContent: 'center' }}
-                        disabled={loading}
-                    >
-                        {loading ? <span className="spinner" /> : null}
-                        {loading ? 'Signing in...' : 'Sign in'}
-                    </button>
-                </form>
-
-                <p
-                    style={{
-                        textAlign: 'center',
-                        marginTop: 24,
-                        color: 'var(--text-secondary)',
-                        fontSize: 13,
-                    }}
-                >
-                    Don&apos;t have an account?{' '}
-                    <Link
-                        href="/signup"
-                        style={{ color: 'var(--accent)', fontWeight: 500 }}
-                    >
-                        Create one
-                    </Link>
-                </p>
-            </div>
+  return (
+    <div className="auth-page">
+      <div className="auth-shell">
+        <div className="auth-info">
+          <div className="auth-brand">
+            <Image
+              src="/titanos-logo.svg"
+              alt="TitanOS logo"
+              width={40}
+              height={40}
+            />
+            <span>TitanOS</span>
+          </div>
+          <h1>{isLogin ? "Welcome back" : "Build your AI marketing engine"}</h1>
+          <p className="auth-intro">
+            {isLogin
+              ? "TitanOS is your AI marketing operating system. Launch strategy, content, and distribution in minutes so your team ships faster without losing consistency."
+              : "Create a workspace, brief your goals, and let TitanOS generate the strategy, content, and distribution plan you need to launch."}
+          </p>
+          <ul className="auth-info-list">
+            <li>Automated positioning and funnel strategy</li>
+            <li>Multi-platform content and ad generation</li>
+            <li>Distribution, scheduling, and analytics</li>
+          </ul>
+          <div className="auth-info-actions">
+            <Link href="/" className="btn btn-secondary">
+              Back to landing
+            </Link>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setMode(isLogin ? "signup" : "login")}
+            >
+              {isLogin ? "Create account" : "Sign in"}
+            </button>
+          </div>
         </div>
-    );
+
+        <div className="auth-card auth-form">
+          <div className="auth-form-header">
+            <h2>{isLogin ? "Sign in" : "Create your account"}</h2>
+            <p>
+              {isLogin
+                ? "Access your workspace and keep launches moving."
+                : "Start building campaigns with TitanOS."}
+            </p>
+          </div>
+
+          {success ? (
+            <div className="form-success">{success}</div>
+          ) : (
+            <form onSubmit={handleSubmit} className="auth-form-body">
+              <div className="form-group">
+                <label className="label" htmlFor="email">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  className="input"
+                  placeholder="you@company.com"
+                  required
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="form-group">
+                <div className="auth-form-row">
+                  <label
+                    className="label"
+                    htmlFor="password"
+                    style={{ marginBottom: 0 }}
+                  >
+                    Password
+                  </label>
+                  {isLogin ? (
+                    <Link href="/login/forgot-password">Forgot password?</Link>
+                  ) : null}
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  className="input"
+                  placeholder={isLogin ? "********" : "Min 8 characters"}
+                  required
+                  minLength={isLogin ? undefined : 8}
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                />
+              </div>
+
+              {error && <div className="form-alert">{error}</div>}
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg"
+                style={{ width: "100%", justifyContent: "center" }}
+                disabled={loading}
+              >
+                {loading ? <span className="spinner" /> : null}
+                {loading
+                  ? isLogin
+                    ? "Signing in..."
+                    : "Creating account..."
+                  : isLogin
+                    ? "Sign in"
+                    : "Create account"}
+              </button>
+            </form>
+          )}
+
+          <p className="auth-footer">
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              type="button"
+              className="auth-switch"
+              onClick={() => setMode(isLogin ? "signup" : "login")}
+            >
+              {isLogin ? "Create one" : "Sign in"}
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }

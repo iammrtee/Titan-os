@@ -13,6 +13,18 @@ const getOrigin = async () => {
 };
 
 export async function login(formData: FormData) {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+        const expectedEmail = process.env.DEV_BYPASS_EMAIL ?? 'dev@titanos.local';
+        const expectedPassword = process.env.DEV_BYPASS_PASSWORD ?? 'devpass123';
+
+        if (email === expectedEmail && password === expectedPassword) {
+            redirect('/dashboard');
+        }
+        return { error: 'Invalid dev credentials' };
+    }
+
     const supabase = await createClient();
 
     const email = formData.get('email') as string;
@@ -29,6 +41,10 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        return { success: 'Dev mode: account created.' };
+    }
+
     const supabase = await createClient();
 
     const email = formData.get('email') as string;
@@ -51,6 +67,10 @@ export async function signup(formData: FormData) {
 }
 
 export async function logout() {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        redirect('/login');
+    }
+
     const supabase = await createClient();
     await supabase.auth.signOut();
     revalidatePath('/', 'layout');
@@ -58,6 +78,10 @@ export async function logout() {
 }
 
 export async function resetPassword(formData: FormData) {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        return { success: 'Dev mode: password reset skipped.' };
+    }
+
     const supabase = await createClient();
     const email = formData.get('email') as string;
     const origin = await getOrigin();
@@ -74,6 +98,10 @@ export async function resetPassword(formData: FormData) {
 }
 
 export async function updatePassword(formData: FormData) {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        redirect('/dashboard');
+    }
+
     const supabase = await createClient();
     const password = formData.get('password') as string;
 

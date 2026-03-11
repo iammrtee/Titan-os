@@ -28,129 +28,91 @@ export default function SignupPage() {
 
     return (
         <div className="auth-page">
-            <div className="auth-card">
-                {/* Logo */}
-                <div style={{ marginBottom: 32, textAlign: 'center' }}>
-                    <div
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            marginBottom: 8,
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 10,
-                                background: 'linear-gradient(135deg, #7c6fff, #4f46e5)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontWeight: 700,
-                                fontSize: 16,
-                                color: '#fff',
-                            }}
-                        >
-                            T
-                        </div>
-                        <span style={{ fontWeight: 700, fontSize: 18 }}>TitanOS</span>
+            <div className="auth-shell">
+                <div className="auth-info">
+                    <div className="auth-brand">
+                        <img src="/titanos-logo.svg" alt="TitanOS logo" />
+                        <span>TitanOS</span>
                     </div>
-                    <h1 style={{ fontSize: 22, marginBottom: 6 }}>Create your account</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-                        Start building your AI marketing engine
+                    <h1>Build your AI marketing engine</h1>
+                    <p className="auth-intro">
+                        Create a workspace, brief your goals, and let TitanOS generate
+                        the strategy, content, and distribution plan you need to launch.
                     </p>
+                    <ul className="auth-info-list">
+                        <li>Kick off a full marketing strategy in minutes</li>
+                        <li>Keep brand tone consistent across every channel</li>
+                        <li>Manage campaigns, assets, and analytics in one view</li>
+                    </ul>
+                    <div className="auth-info-actions">
+                        <Link href="/" className="btn btn-secondary">
+                            Back to landing
+                        </Link>
+                        <Link href="/login" className="btn btn-ghost">
+                            Sign in
+                        </Link>
+                    </div>
                 </div>
 
-                {success ? (
-                    <div
-                        style={{
-                            padding: '16px',
-                            background: 'var(--success-subtle)',
-                            border: '1px solid rgba(34,197,94,0.2)',
-                            borderRadius: 'var(--radius)',
-                            color: 'var(--success)',
-                            fontSize: 14,
-                            textAlign: 'center',
-                        }}
-                    >
-                        ✓ {success}
+                <div className="auth-card auth-form">
+                    <div className="auth-form-header">
+                        <h2>Create your account</h2>
+                        <p>Start building campaigns with TitanOS.</p>
                     </div>
-                ) : (
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label className="label" htmlFor="email">
-                                Email
-                            </label>
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                className="input"
-                                placeholder="you@company.com"
-                                required
-                                autoComplete="email"
-                            />
-                        </div>
 
-                        <div className="form-group">
-                            <label className="label" htmlFor="password">
-                                Password
-                            </label>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                className="input"
-                                placeholder="Min 8 characters"
-                                required
-                                minLength={8}
-                                autoComplete="new-password"
-                            />
-                        </div>
-
-                        {error && (
-                            <div
-                                style={{
-                                    padding: '10px 12px',
-                                    background: 'var(--error-subtle)',
-                                    border: '1px solid rgba(239,68,68,0.2)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    color: 'var(--error)',
-                                    fontSize: 13,
-                                    marginBottom: 16,
-                                }}
-                            >
-                                {error}
+                    {success ? (
+                        <div className="form-success">{success}</div>
+                    ) : (
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label className="label" htmlFor="email">
+                                    Email
+                                </label>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    className="input"
+                                    placeholder="you@company.com"
+                                    required
+                                    autoComplete="email"
+                                />
                             </div>
-                        )}
 
-                        <button
-                            type="submit"
-                            className="btn btn-primary btn-lg"
-                            style={{ width: '100%', justifyContent: 'center' }}
-                            disabled={loading}
-                        >
-                            {loading ? <span className="spinner" /> : null}
-                            {loading ? 'Creating account...' : 'Create account'}
-                        </button>
-                    </form>
-                )}
+                            <div className="form-group">
+                                <label className="label" htmlFor="password">
+                                    Password
+                                </label>
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    className="input"
+                                    placeholder="Min 8 characters"
+                                    required
+                                    minLength={8}
+                                    autoComplete="new-password"
+                                />
+                            </div>
 
-                <p
-                    style={{
-                        textAlign: 'center',
-                        marginTop: 24,
-                        color: 'var(--text-secondary)',
-                        fontSize: 13,
-                    }}
-                >
-                    Already have an account?{' '}
-                    <Link href="/login" style={{ color: 'var(--accent)', fontWeight: 500 }}>
-                        Sign in
-                    </Link>
-                </p>
+                            {error && <div className="form-alert">{error}</div>}
+
+                            <button
+                                type="submit"
+                                className="btn btn-primary btn-lg"
+                                style={{ width: '100%', justifyContent: 'center' }}
+                                disabled={loading}
+                            >
+                                {loading ? <span className="spinner" /> : null}
+                                {loading ? 'Creating account...' : 'Create account'}
+                            </button>
+                        </form>
+                    )}
+
+                    <p className="auth-footer">
+                        Already have an account? <Link href="/login">Sign in</Link>
+                    </p>
+                </div>
             </div>
         </div>
     );
