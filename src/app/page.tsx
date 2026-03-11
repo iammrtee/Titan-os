@@ -1,4 +1,5 @@
 "use client";
+// Forced Next.js Fast Refresh
 
 import { useState } from "react";
 import Link from "next/link";
