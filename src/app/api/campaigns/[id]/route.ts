@@ -27,20 +27,31 @@ export async function GET(
         let finalCalendar = calendarRes.data || [];
 
         // 2. Efficient Fallback: Only fetch if necessary
-        const hasStrategy = finalContent.some(r => r.content_type === 'strategy');
+        const hasStrategy = (finalContent as any[]).some((r: any) => r.content_type === 'strategy');
 
         if (!hasStrategy || finalCalendar.length === 0) {
+            // Helper for safe fetching
+            const safeFetch = async (query: any) => {
+                try {
+                    const { data, error } = await query;
+                    if (error) return { data: null };
+                    return { data };
+                } catch {
+                    return { data: null };
+                }
+            };
+
             const [posRes, calRes, adsRes, aiAssetsRes] = await Promise.all([
-                supabase.from('positioning_output').select('positioning_json').eq('project_id', campaign.project_id).maybeSingle(),
-                supabase.from('content_calendar').select('calendar_json').eq('project_id', campaign.project_id).maybeSingle(),
-                supabase.from('ad_campaigns').select('campaigns_json').eq('project_id', campaign.project_id).maybeSingle(),
-                supabase.from('content_assets').select('assets_json').eq('project_id', campaign.project_id).maybeSingle()
+                safeFetch(supabase.from('positioning_output').select('positioning_json').eq('project_id', campaign.project_id).maybeSingle()),
+                safeFetch(supabase.from('content_calendar').select('calendar_json').eq('project_id', campaign.project_id).maybeSingle()),
+                safeFetch(supabase.from('ad_campaigns').select('campaigns_json').eq('project_id', campaign.project_id).maybeSingle()),
+                safeFetch(supabase.from('content_assets' as any).select('assets_json' as any).eq('project_id', campaign.project_id).maybeSingle())
             ]);
 
             // Map Strategy if missing
             if (!hasStrategy && posRes.data?.positioning_json) {
                 const pos = posRes.data.positioning_json;
-                // Ensure we handle both string and object if Supabase client behavior varies
+                // Ensure we handle both string and object
                 const p = typeof pos === 'string' ? JSON.parse(pos) : pos;
 
                 finalContent.push({

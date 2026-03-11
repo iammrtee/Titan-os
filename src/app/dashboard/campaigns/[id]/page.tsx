@@ -11,7 +11,7 @@ interface CalendarRow { id: string; day_number: number; platform: string; conten
 interface Campaign { id: string; status: string; flyer_image_url: string | null; flyer_content: string; flyer_style: string; created_at: string; projects?: { name: string }; }
 
 const PLATFORM_EMOJI: Record<string, string> = { instagram: '📸', facebook: '👥', linkedin: '💼', tiktok: '🎵', x: '🐦', general: '⚡' };
-const TABS = ['Assets', 'Queue'];
+const TABS = ['Strategy', 'Assets', 'Queue'];
 
 interface ToastState { visible: boolean; message: string; type: 'success' | 'error' | 'info'; submessage?: string; }
 
@@ -399,6 +399,50 @@ export default function CampaignDetailPage() {
                     }}>{tab}</button>
                 ))}
             </div>
+
+            {/* Strategy Tab */}
+            {activeTab === 'Strategy' && strategy && (
+                <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: '1px solid var(--border)', padding: '32px 40px', boxShadow: '0 8px 30px rgba(0,0,0,0.12)', marginBottom: 32 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--accent-subtle)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🧠</div>
+                        <div>
+                            <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Growth Strategy</h2>
+                            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>The AI-generated blueprint for this campaign</p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+                        {[
+                            { label: 'Target Audience (ICP)', value: strategy.icp, icon: '🎯' },
+                            { label: 'Positioning Statement', value: strategy.positioningStatement, icon: '📍' },
+                            { label: 'Offer Angle', value: strategy.offerAngle, icon: '💎' },
+                            { label: 'Campaign Objective', value: strategy.campaignObjective, icon: '🚩' }
+                        ].map(item => (
+                            <div key={item.label} style={{ background: 'var(--bg-secondary)', borderRadius: 16, padding: 20, border: '1px solid var(--border-subtle)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                    <span style={{ fontSize: 16 }}>{item.icon}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</span>
+                                </div>
+                                <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.6, margin: 0, fontWeight: 500 }}>{item.value}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div style={{ marginTop: 24, padding: 20, borderRadius: 16, background: 'rgba(52, 211, 153, 0.05)', border: '1px solid rgba(52, 211, 153, 0.15)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                            <span style={{ fontSize: 16 }}>📱</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target Platforms</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {(strategy.targetPlatforms || []).map((p: string) => (
+                                <span key={p} style={{ padding: '6px 14px', borderRadius: 20, background: '#34d39922', color: '#34d399', fontSize: 11, fontWeight: 700, textTransform: 'capitalize' }}>
+                                    {PLATFORM_EMOJI[p.toLowerCase()] || '⚡'} {p}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Assets Tab */}
             {activeTab === 'Assets' && (
