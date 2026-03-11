@@ -103,7 +103,7 @@ export default function Sidebar({ user, projects }: SidebarProps) {
           style={{ display: "flex", alignItems: "center", gap: 10 }}
         >
           <img
-            src="/titanos-logo.svg"
+            src="/titanos-logo.png"
             alt="TitanOS logo"
             width={32}
             height={32}
@@ -168,7 +168,7 @@ export default function Sidebar({ user, projects }: SidebarProps) {
               style={{ display: "flex", alignItems: "center", gap: 10 }}
             >
               <img
-                src="/titanos-logo.svg"
+                src="/titanos-logo.png"
                 alt="TitanOS logo"
                 width={32}
                 height={32}

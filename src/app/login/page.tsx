@@ -46,7 +46,7 @@ export default function LoginPage() {
         <div className="auth-info">
           <div className="auth-brand">
             <Image
-              src="/titanos-logo.svg"
+              src="/titanos-logo.png"
               alt="TitanOS logo"
               width={40}
               height={40}

@@ -1,9 +1,9 @@
-import type { Metadata } from 'next';
-import './globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'TitanOS — AI Marketing Engine',
-  description: 'Your AI-powered marketing operating system',
+  title: "TitanOS — AI Marketing Engine",
+  description: "Your AI-powered marketing operating system",
 };
 
 export default function RootLayout({
@@ -15,8 +15,11 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="icon" type="image/svg+xml" href="/titanos-logo.svg" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>{children}</body>
     </html>
