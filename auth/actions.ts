@@ -13,7 +13,6 @@ const getOrigin = async () => {
 };
 
 export async function login(formData: FormData) {
-<<<<<<< HEAD
     if (process.env.DEV_BYPASS_AUTH === 'true') {
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
@@ -26,13 +25,10 @@ export async function login(formData: FormData) {
         return { error: 'Invalid dev credentials' };
     }
 
-    const supabase = await createClient();
-=======
     try {
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
             return { error: 'Supabase configuration is missing. Please check your environment variables.' };
         }
->>>>>>> 41458002e48634a169bc5731851fde0943ee8513
 
         const supabase = await createClient();
 
