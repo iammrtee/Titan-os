@@ -15,6 +15,7 @@ import {
     contentCalendarPrompt,
     adCampaignsPrompt,
     contentAssetsPrompt,
+    deepAnalysisPrompt,
 } from '@/prompts/chain-prompts';
 
 // ─── Helper: Call Gemini and parse JSON ───────────────────────
@@ -26,7 +27,7 @@ async function callGemini<T>(prompt: string): Promise<T> {
     });
 
     const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
             responseMimeType: 'application/json',
@@ -67,14 +68,25 @@ export async function runFunnel(
     return callGemini<FunnelResult>(prompt);
 }
 
+export async function runDeepAnalysis(
+    userInstruction: string,
+    positioning: PositioningResult,
+    funnel: FunnelResult,
+    calendar: ContentCalendarResult
+): Promise<{ is_actionable: boolean; critique: string; refined_strategic_brief: string; recommended_theme: string }> {
+    const prompt = deepAnalysisPrompt(userInstruction, positioning, funnel, calendar);
+    return callGemini<{ is_actionable: boolean; critique: string; refined_strategic_brief: string; recommended_theme: string }>(prompt);
+}
+
 export async function runContentCalendar(
     positioning: PositioningResult,
     funnel: FunnelResult,
     businessName: string,
     niche: string,
     targetAudience: string,
+    customRefinementBrief?: string,
 ): Promise<ContentCalendarResult> {
-    const prompt = contentCalendarPrompt(positioning, funnel, businessName, niche, targetAudience);
+    const prompt = contentCalendarPrompt(positioning, funnel, businessName, niche, targetAudience, customRefinementBrief);
     return callGemini<ContentCalendarResult>(prompt);
 }
 

@@ -59,36 +59,23 @@ export async function POST(req: NextRequest) {
 - Ensure the generated flyer feels familiar and stylistically consistent with the provided reference, while still following the "Premium Gradient" template.`
                 : '';
 
-            const templatePrompt = `You are an expert art director. Fill out the visual variables for a premium gradient marketing graphic based on the following content.
+            const templatePrompt = `You are an elite art director and visual analyst. Your task is to perform a DEEP ANALYSIS of BOTH the provided inspiration image and the content idea text to extract its core visual and conceptual DNA.
+            
+            EXTRACT DETAILED VISUAL & CONCEPTUAL DATA:
+            1. primary_color_hex: extract accurate hex codes from the image/content
+            2. secondary_color_hex: extract supporting accent hex codes
+            3. lighting_atmosphere: describe the specific lighting and mood (e.g. "cinematic rim lighting", "soft pastel morning glow")
+            4. texture_material: describe surface qualities (e.g. "frosted refractive glass", "matte obsidian")
+            5. composition_layout: describe spatial arrangement (e.g. "dynamic diagonal tension")
+            6. artistic_style: 1-sentence summary of the medium and aesthetic
+            7. conceptual_anchor: The main visual metaphor derived from analyzing the content idea: ${contentSource}
+            8. primary_3d_object: Identify the MAIN PHYSICAL SUBJECT/OBJECT present in the reference image (is it a man? woman? child? robotic hand? shiny orb? mascot? animal?). Describe it as a stylized high-end 3D model that also visually represents the content anchor: ${contentSource}
+            9. secondary_3d_object: A smaller accent object reinforcing the theme
+            10. headline_line_1: Most impactful part of the text
+            11. headline_line_2: Supporting part of the headline
+            12. supporting_statement: A short subheadline for the footer area
 
-Brand Name: ${projectName || 'The Brand'}
-${contentSource}
-${colorIntelligence}
-${visionIntelligence}
-
-Output a JSON object with EXACTLY these keys:
-{
-    "primary_color_name": "${color ? color : 'e.g. deep purple'}",
-    "accent_color_name": "e.g. neon yellow",
-    "headline_line_1": "First part of the hook (short)",
-    "headline_line_2": "Second part of the hook",
-    "highlight_word": "One word from headline_line_2 to emphasize",
-    "supporting_statement": "A short subheadline matching the topic",
-    "primary_3d_object": "A stylized 3D object representing the topic (e.g. futuristic metallic coin)",
-    "secondary_3d_object": "A smaller accessory 3D object (e.g. cracked glass, rising chart)"
-}
-
-Example values for a Crypto brand where the hook is "They Bought More Crypto But Still Lost Money":
-{
-    "primary_color_name": "dark blue",
-    "accent_color_name": "gold",
-    "headline_line_1": "They Bought More",
-    "headline_line_2": "Crypto",
-    "highlight_word": "Crypto",
-    "supporting_statement": "But Still Lost Money.",
-    "primary_3d_object": "futuristic metallic Bitcoin coin",
-    "secondary_3d_object": "cracked dollar bill"
-}`;
+            Output ONLY a JSON object with these EXACT keys.`;
 
             let geminiContents: any = templatePrompt;
 
@@ -109,7 +96,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: geminiContents,
                 config: {
                     responseMimeType: 'application/json',
@@ -124,26 +111,57 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
 
             const vars = JSON.parse(geminiResponse.text || '{}');
 
-            // Hard Overrides: User input beats AI extraction
-            let head1 = cleanValue(vars.headline_line_1);
-            let head2 = cleanValue(vars.headline_line_2);
-            let sub = cleanValue(vars.supporting_statement);
-            let obj1 = cleanValue(vars.primary_3d_object);
-            let obj2 = cleanValue(vars.secondary_3d_object);
+            // Extraction with fallbacks
+            let head1 = cleanValue(vars.headline_line_1 || vars.headline_text || '');
+            let head2 = cleanValue(vars.headline_line_2 || '');
+            let sub = cleanValue(vars.supporting_statement || '');
+            let obj1 = cleanValue(vars.primary_3d_object || '');
+            let obj2 = cleanValue(vars.secondary_3d_object || '');
+            const anchor = cleanValue(vars.conceptual_anchor || '');
             let logo = cleanValue(projectName || 'The Brand');
 
+            // Deep Visual DNA
+            const activeColor = color || vars.primary_color_hex || vars.primary_color_name || 'deep purple';
+            const lighting = cleanValue(vars.lighting_atmosphere || 'professional studio lighting');
+            const materials = cleanValue(vars.texture_material || 'premium surfaces');
+            const composition = cleanValue(vars.composition_layout || 'modern balanced layout');
+            const styleLabel = cleanValue(vars.artistic_style || 'modern marketing aesthetic');
+
             if (headlineText) {
-                // Split multi-line or long headlines into head1 and head2
                 const lines = headlineText.split('\n').map((l: string) => l.trim()).filter(Boolean);
                 head1 = lines[0] || headlineText;
                 head2 = lines[1] || '';
             }
-            if (primaryObject) obj1 = primaryObject.trim();
-            if (logoText) logo = logoText.trim();
-            if (footerText) sub = footerText.trim(); // For Style 1, footerText maps to supporting statement or we can use bottom text
 
-            // Set final Prompt with high-fidelity Flow/Nano aesthetic
-            finalPrompt = `An ultra-HD 3D marketing graphic with a luxurious ${vars.primary_color_name || color || 'dark'} gradient glassmorphism background featuring soft-noise texture and ray-traced reflections. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font saying '${head1}'. ${head2 ? `Below it, the word '${head2}' is elegantly inside a glowing ${vars.accent_color_name} 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} is positioned next to a secondary complementary 3D ${obj2}. Sophisticated cinematic studio lighting, sharp caustics, premium 3D advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
+            // If a primaryObject is manually provided, it replaces the AI-extracted object.
+            // If it's a manual override, we assume the user wants THIS object to be the focus.
+            if (primaryObject) {
+                obj1 = primaryObject.trim();
+            }
+
+            if (logoText) logo = logoText.trim();
+            if (footerText) {
+                sub = footerText.trim();
+            } else if (headlineText && customContent) {
+                // If headline is manual, map customContent to the supporting statement banner
+                sub = customContent.trim().split('\n')[0];
+            }
+
+            // Character details: Improved integration
+            // If the primary object is clearly NOT a person (e.g. "robot", "car", "logo"), we might want to skip charDesc 
+            // but for Style 1 the user often expects the character inputs to apply to the main subject if it's humanoid.
+            // Character details: Improved integration
+            const hasCharacterProps = characterGender || facialExpression || poseDescription || hairStyle || outfitDescription;
+            const charDesc = hasCharacterProps
+                ? `Specifically, the ${obj1} is a ${characterEthnicity || 'any'}-skinned ${characterGender || 'person'} with ${hairStyle || 'natural hair'}, wearing ${outfitDescription || 'stylish professional clothes'}. The facial expression is strictly "${facialExpression || 'confident'}" and the pose is "${poseDescription || 'standing'}".`
+                : '';
+
+            // Subject Replacement Logic: If the user provides a manual object, we MUST force the AI to ignore the reference image's subject.
+            const subjectDirective = primaryObject 
+                ? `\n[SUBJECT REPLACEMENT]: IMPORTANT! Do NOT use the physical subject from the reference image. Instead, use a high-detail 3D ${obj1}. The reference image should ONLY be used for lighting, color, and material inspiration.\n`
+                : '';
+
+            finalPrompt = `${subjectDirective}An ultra-HD marketing graphic in a ${styleLabel} style, characterized by a ${activeColor} color palette. The composition is ${composition}, centered around a conceptual theme of "${anchor}". Surface materials are defined by ${materials}, and the scene features ${lighting}. The top half features massive, clean, rounded white 3D letters in a bold Swiss-style font for the primary headline: '${head1}'. ${head2 ? `Below it, the secondary text '${head2}' is elegantly placed inside a glowing 3D pill shape with internal illumination.` : ''} A clean, translucent frosted glass banner displays the perfectly legible white text '${sub}'. In the foreground, a hyper-realistic high-detail 3D ${obj1} ${charDesc} is positioned next to a secondary complementary 3D ${obj2}, visually representing the core idea. Sophisticated lighting, sharp caustics, premium advertising aesthetic. 8k resolution, minimalist layout. White footer text: "${logo}".`;
 
             console.log("Style 1 Designer Expert Refined:", finalPrompt);
         } else if (style === 'style-4') {
@@ -152,23 +170,22 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
                 ? `Custom Content: ${customContent}`
                 : `Post Topic: ${topic}\nHeadline Hook: ${hook}`;
 
-            const templatePrompt = `You are a world-class luxury art director for a high-end tech brand (Titan Elite). Your aesthetic is "Obsidian & Chrome" — dark, expensive, and minimalist.
+            const templatePrompt = `You are a world-class luxury art director. Perform a DEEP CONCEPTUAL ANALYSIS of the content to extract a sophisticated visual metaphor for a "Titan Elite" luxury brand.
             
-            EXTRACT VISUAL DATA FOR:
             PROJECT: ${projectName || 'The Brand'}
             CONTENT: ${contentSource}
             
             Output JSON:
             {
-              "SERIF_HEADLINE": "massive elegant serif headline (upper case)",
-              "MONO_LABEL": "top sub-label in monospace (e.g. SYSTEM_ACTIVE)",
+              "SERIF_HEADLINE": "massive elegant serif headline (max 3 words)",
+              "CONCEPTUAL_THEME": "a sophisticated visual metaphor (e.g. 'the weight of legacy', 'orbital precision')",
               "ACCENT_METAL": "gold, silver, bronze, or copper",
-              "CORE_OBJECT": "abstract luxury 3D object (e.g. floating basalt monolith, liquid chrome sphere)",
-              "TAGLINE": "one refined sentence of copy"
+              "CORE_OBJECT": "A high-end 3D object representing the metahpor (e.g. floating platinum cube, obsidian orb)",
+              "TAGLINE": "one refined sentence of copy summarizing the idea"
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -178,7 +195,35 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
 
             const vars = JSON.parse(geminiResponse.text || '{}');
 
-            finalPrompt = `A high-end luxury editorial poster with a deep matte obsidian black background. The typography is massive, elegant, high-contrast white serif font (like Didot or Bodoni) reading "${vars.SERIF_HEADLINE}". At the top, a small monospace technical label "${vars.MONO_LABEL}". Centered is a stunning, hyper-realistic 3D ${vars.CORE_OBJECT} with brushed ${vars.ACCENT_METAL} accents and liquid metal textures. The lighting is cinematic low-key with sharp rim highlights and soft volumetrics. The bottom features a minimal white tagline "${vars.TAGLINE}". Executive aesthetic, premium tech luxury, 8k resolution, perfectly clean composition.`;
+            const activeColor = color || 'obsidian black';
+            let headline = (vars.SERIF_HEADLINE || '').toUpperCase();
+            let labelTextVal = vars.MONO_LABEL || 'SYSTEM_ACTIVE';
+            let tagline = vars.TAGLINE || '';
+            let obj = vars.CORE_OBJECT || 'abstract luxury 3D object';
+            let logo = projectName || 'The Brand';
+
+            if (headlineText) headline = headlineText.toUpperCase();
+            if (labelText) labelTextVal = labelText.toUpperCase();
+            if (footerText) {
+                tagline = footerText;
+            } else if (headlineText && customContent) {
+                tagline = customContent.trim().split('\n')[0];
+            }
+            if (logoText) logo = logoText;
+            if (primaryObject) obj = primaryObject;
+
+            // Character details for Style 4 (if provided)
+            const hasCharacter = characterGender || facialExpression || poseDescription;
+            const charDesc = hasCharacter
+                ? `Specifically featuring a ${characterEthnicity || 'any'}-skinned ${characterGender || 'person'} with ${hairStyle || 'natural hair'}, wearing ${outfitDescription || 'luxury high-end fashion'}. Facial expression: strictly "${facialExpression || 'stoic and elite'}", pose: "${poseDescription || 'composed'}".`
+                : '';
+
+            // Subject Replacement Logic
+            const subjectDirective = primaryObject 
+                ? `\n[SUBJECT REPLACEMENT]: IMPORTANT! Do NOT use the physical subject from the reference image. Instead, use a high-detail 3D ${obj}. The reference image should ONLY be used for lighting, color, and material inspiration.\n`
+                : '';
+
+            finalPrompt = `${subjectDirective}A high-end luxury editorial poster themed around "${vars.CONCEPTUAL_THEME || 'elite excellence'}". The background is a deep matte ${activeColor}. Typography is massive, elegant, high-contrast white serif font reading "${headline}". Small monospace label "${vars.MONO_LABEL || 'TITAN_ELITE'}". Centered is a stunning, hyper-realistic 3D ${obj} ${charDesc} with ${vars.ACCENT_METAL || 'platinum'} accents. The lighting is cinematic low-key with sharp rim highlights. Bottom features a minimal white tagline "${tagline}". Brand: ${logo}.`;
 
             console.log("Style 4 Titan Elite Created:", finalPrompt);
         } else if (style === 'style-2') {
@@ -187,8 +232,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
                 ? `Custom Content: ${customContent}`
                 : `Post Topic: ${topic}\nHeadline Hook: ${hook}`;
 
-            const templatePrompt = `You are a high-end 3D illustrator specializing in "Corporate Memphis" startup aesthetics. 
-            Extraction task for a structured 3D poster.
+            const templatePrompt = `You are a high-end 3D illustrator. Perform a DEEP ANALYSIS of the content to find its "human core" and "visual hook" for a modern startup poster.
             
             PROJECT: ${projectName || 'The Brand'}
             DETAILS: ${contentSource}
@@ -196,6 +240,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
 
             Output ONLY a JSON object:
             {
+              "CONCEPTUAL_HOOK": "the core human value or action mentioned in the text",
               "HEADLINE_TEXT": "catchy massive headline",
               "CHARACTER_GENDER": "${characterGender || 'male/female/non-binary'}",
               "CHARACTER_ETHNICITY": "${characterEthnicity || 'any'}",
@@ -216,7 +261,7 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -259,7 +304,12 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             }
             if (ctaButtonText) cta = ctaButtonText.trim();
             if (logoText) logo = logoText.trim();
-            if (bottomLeftText) botLeft = bottomLeftText.trim();
+            if (bottomLeftText) {
+                botLeft = bottomLeftText.trim();
+            } else if (headlineText && customContent) {
+                // If headline is manual, use customContent for bottom sub-text
+                botLeft = customContent.trim().split('\n')[0];
+            }
             if (characterGender) gen = characterGender.trim();
             if (characterEthnicity) eth = characterEthnicity.trim();
             if (hairStyle) hair = hairStyle.trim();
@@ -268,7 +318,12 @@ Example values for a Crypto brand where the hook is "They Bought More Crypto But
             if (poseDescription) pose = poseDescription.trim();
             if (primaryObject) obj = primaryObject.trim();
 
-            finalPrompt = `A high-quality 3D digital illustration in Corporate Memphis startup style. Background is a smooth gradient using ${bg1} and ${bg2} with subtle grain texture. Large bold typography reads '${head}'. A ${eth}-skinned ${gen} with ${hair} hair, wearing ${outfit}, is ${pose} while interacting with a stylized 3D ${obj}. A large 3D button reading '${cta}' appears in ${btnHex}. A dynamic ${accHex} ${rib} wraps around the object creating motion. Bottom left text reads '${botLeft}'. Bottom right shows '${logo}'. Energetic, modern, commercial startup aesthetic, soft studio lighting, high resolution.`;
+            // Subject Replacement Logic
+            const subjectDirective = primaryObject 
+                ? `\n[SUBJECT REPLACEMENT]: IMPORTANT! Do NOT use the physical subject from the reference image. Instead, use a high-detail 3D ${obj}. The reference image should ONLY be used for lighting, color, and material inspiration.\n`
+                : '';
+
+            finalPrompt = `${subjectDirective}A high-quality 3D digital illustration themed around "${vars.CONCEPTUAL_HOOK || 'startup growth'}". Background is a smooth gradient using ${color || bg1} and ${bg2} with subtle grain texture. Large bold typography reads '${head}'. A ${eth}-skinned ${gen} with ${hair} hair, wearing ${outfit}, with a facial expression strictly "${face}", is ${pose} while interacting with a stylized 3D ${obj}. A large 3D button reading '${cta}' appears in ${btnHex}. A dynamic ${accHex} ${rib} wraps around the scene. Bottom left text reads '${botLeft}'. Bottom right shows '${logo}'. Energetic, modern, high resolution.`;
 
             console.log("Style 2 Corporate Memphis Refined:", finalPrompt);
 
@@ -298,16 +353,14 @@ Derive ALL colors from this single brand color:
 - shape_color  → rgba(255,255,255,0.12)
 - text_color   → #ffffff`;
 
-            const templatePrompt = `You are an expert art director specializing in the 2D3D hybrid design trend — flat graphic design combined with a single photorealistic 3D subject that pops out of the composition (think Spotify cards, Duolingo ads, modern motion-graphics posters).
-
-            IMPORTANT: For label, h1, h2, sub provide ONLY raw words. NO dashes, NO quotes, NO punctuation.
-
-            PROJECT: ${projectName || 'The Brand'}
-            DETAILS: ${contentSource}
-            BRAND COLOR: ${color || 'vivid purple'}
+            const templatePrompt = `You are a world-class art director. Perform a DEEP CONCEPTUAL ANALYSIS of the content to find its "visual metaphor" and "emotional core" for a modern 2D3D hybrid poster.
+            
+            ${s3ColorGuide}
 
             Output ONLY a JSON object:
             {
+              "VISUAL_METAPHOR": "a strong visual metaphor for the idea (e.g. 'a golden key for access', 'rising digital stairs for progress')",
+              "EMOTIONAL_CORE": "the core feeling of the piece (e.g. 'high-energy breakthrough', 'serene elite clarity')",
               "label": "short 2-3 word category label (e.g. GROWTH HACK, NEW LAUNCH)",
               "h1": "main bold headline — short punchy line 1",
               "h2": "headline continuation — line 2 (can be empty string if not needed)",
@@ -325,7 +378,7 @@ Derive ALL colors from this single brand color:
             }`;
 
             const geminiResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: templatePrompt,
                 config: {
                     responseMimeType: 'application/json',
@@ -344,7 +397,7 @@ Derive ALL colors from this single brand color:
             let label = cleanValue(vars.label);
             let h1 = cleanValue(vars.h1);
             let h2 = cleanValue(vars.h2);
-            const sub = cleanValue(vars.sub);
+            let sub = cleanValue(vars.sub);
 
             let gen = cleanValue(vars.CHARACTER_GENDER);
             let eth = cleanValue(vars.CHARACTER_ETHNICITY);
@@ -358,8 +411,12 @@ Derive ALL colors from this single brand color:
             const footer = cleanValue(vars.FOOTER_TEXT);
 
             // Hard overrides: user input ALWAYS beats AI extraction — no exceptions
-            if (headlineText) { h1 = headlineText.trim(); h2 = ''; }
-            else if (customContent) {
+            if (headlineText) {
+                h1 = headlineText.trim();
+                h2 = '';
+                // If headline is manual, map customContent to subtext
+                if (customContent) sub = customContent.trim().split('\n')[0];
+            } else if (customContent) {
                 // User's typed idea text goes directly on the flyer — no AI rewriting
                 const lines = customContent.trim().split('\n').map((l: string) => l.trim()).filter(Boolean);
                 h1 = lines[0] || h1;
@@ -380,11 +437,16 @@ Derive ALL colors from this single brand color:
 
             // Build label segment only if label is set
             const labelSegment = label
-                ? `a thick rounded rectangle shape in a contrasting accent color containing the all-caps category label "${label}",`
+                ? `a thick rounded rectangle shape in a contrasting accent color containing the all - caps category label "${label}", `
+                : '';
+
+            // Subject Replacement Logic
+            const subjectDirective = primaryObject 
+                ? `\n[SUBJECT REPLACEMENT]: IMPORTANT! Do NOT use the physical subject from the reference image. Instead, use a high-detail 3D ${obj}. The reference image should ONLY be used for lighting, color, and material inspiration.\n`
                 : '';
 
             // 2D3D hybrid: flat 2D layout elements + photorealistic 3D subject breaking the plane
-            finalPrompt = `A bold 2D3D hybrid marketing poster. The background is a single flat solid ${color || 'vivid deep purple'} color — no gradients, no textures, completely flat 2D. Overlaying the flat BG are bold 2D graphic design elements: ${labelSegment} massive clean sans-serif white flat typography reading "${h1}"${h2 ? ` then "${h2}"` : ''} stacked in large blocks, a thin flat horizontal rule as a divider, and small flat white text "${sub}". In the lower-center of the composition, a single hyper-realistic photorealistic 3D rendered character — specifically a ${eth}-skinned ${gen}, with ${hair} hair, wearing a ${outfit}, facial expression: ${face}, posed as: ${pose}, next to a 3D ${obj} — bursts forward out of the flat background. The 3D figure has full cinematic lighting, subsurface scattering skin, detailed cloth physics, and drops a realistic soft shadow onto the 2D background. At the bottom: a flat 2D pill button in the accent color with bold white text "${cta}", the logo text "${logo}" in clean sans-serif, and small footer text "${footer}". The result is a sharp contrast between the completely flat 2D graphic layout and the singular photorealistic 3D character. Editorial, high-impact, 8K resolution.`;
+            finalPrompt = `${subjectDirective}A bold 2D3D hybrid marketing poster themed around "${vars.VISUAL_METAPHOR || 'innovation'}". The background is a single flat solid ${color || 'vivid deep purple'} color capturing a "${vars.EMOTIONAL_CORE || 'dynamic breakthrough'}" mood. Overlaying the flat BG are bold 2D graphic design elements: ${labelSegment}massive clean sans-serif white flat typography reading "${h1}"${h2 ? ` then "${h2}"` : ''} stacked in large blocks, a thin flat horizontal rule as a divider, and small flat white text "${sub}". In the lower-center of the composition, a single hyper-realistic photorealistic 3D rendered character — specifically a ${eth}-skinned ${gen}, with ${hair} hair, wearing a ${outfit}, facial expression: ${face}, posed as: ${pose}, next to a 3D ${obj} — bursts forward out of the flat background. The 3D figure has full cinematic lighting and subsurface scattering. At the bottom: a flat 2D pill button with bold white text "${cta}", the logo text "${logo}" in clean sans-serif, and small footer text "${footer}". The result is a sharp contrast between the 2D layout and the photorealistic 3D character. 8K resolution.`;
 
             console.log("Style 3 2D3D Hybrid:", finalPrompt);
 
@@ -400,13 +462,33 @@ Derive ALL colors from this single brand color:
         let attempts = 0;
         const maxAttempts = 2;
 
+        // Prepare contents for generation
+        let generationContents: any = `${finalPrompt} Aspect ratio: ${activeAspectRatio}.`;
+
+        // If a reference image is provided, pass it to the generation model for grounding
+        if (referenceImageUrl) {
+            try {
+                const imgRes = await fetch(referenceImageUrl);
+                const buffer = await imgRes.arrayBuffer();
+                const b64 = Buffer.from(buffer).toString('base64');
+                const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+
+                generationContents = [
+                    { text: generationContents },
+                    { inlineData: { data: b64, mimeType: mime } }
+                ];
+            } catch (err) {
+                console.error("[FlyerGen] Failed to fetch reference image for generation grounding:", err);
+            }
+        }
+
         while (attempts < maxAttempts) {
             try {
                 // gemini-3.1-flash-image-preview is the correct model for image generation
                 // Must use generateContent (NOT generateImages which hits the Imagen predict endpoint)
                 const imgResponse = await ai.models.generateContent({
-                    model: 'gemini-1.5-flash',
-                    contents: `${finalPrompt} Aspect ratio: ${activeAspectRatio}.`,
+                    model: 'gemini-3.1-flash-image-preview',
+                    contents: generationContents,
                 });
 
                 // Extract the image part from the response
@@ -426,7 +508,7 @@ Derive ALL colors from this single brand color:
                 const isRateLimit = err?.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED');
 
                 if (isRateLimit && attempts < maxAttempts) {
-                    console.log(`Rate limit hit (429). Retrying attempt ${attempts + 1}/${maxAttempts}...`);
+                    console.log(`Rate limit hit(429).Retrying attempt ${attempts + 1}/${maxAttempts}...`);
                     await sleep(2000);
                     continue;
                 }

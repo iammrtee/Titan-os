@@ -80,7 +80,7 @@ function KvRow({ label, value }: { label: string; value: React.ReactNode }) {
 function Tags({ items }: { items: string[] }) {
     return (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {items.map((item, i) => (
+            {(Array.isArray(items) ? items : []).filter(Boolean).map((item, i) => (
                 <span
                     key={i}
                     style={{
@@ -92,7 +92,7 @@ function Tags({ items }: { items: string[] }) {
                         color: 'var(--text-secondary)',
                     }}
                 >
-                    {item}
+                    {String(item)}
                 </span>
             ))}
         </div>
@@ -109,22 +109,22 @@ function AnalysisTab({ data }: { data: WebsiteAnalysisOutput | null | undefined 
         <div>
             <KvRow label="Business Type" value={data.business_type || 'N/A'} />
             <KvRow label="Core Transformation" value={data.core_transformation || 'N/A'} />
-            <KvRow label="Target Audience" value={<Tags items={Array.isArray(audience) ? audience : [audience]} />} />
-            <KvRow label="Market Tension" value={data.market_tension || 'N/A'} />
-            <KvRow label="Value Proposition" value={data.unique_value_proposition || 'N/A'} />
-            <KvRow label="Messaging Gaps" value={<Tags items={data.messaging_gap_analysis || []} />} />
-            <KvRow label="Unfair Advantages" value={<Tags items={data.unfair_advantages || []} />} />
+            <KvRow label="Target Audience" value={<Tags items={Array.isArray(audience) ? audience : []} />} />
+            <KvRow label="Market Tension" value={String(data.market_tension || 'N/A')} />
+            <KvRow label="Value Proposition" value={String(data.unique_value_proposition || 'N/A')} />
+            <KvRow label="Messaging Gaps" value={<Tags items={Array.isArray(data.messaging_gap_analysis) ? data.messaging_gap_analysis : []} />} />
+            <KvRow label="Unfair Advantages" value={<Tags items={Array.isArray(data.unfair_advantages) ? data.unfair_advantages : []} />} />
 
             {/* Competitor Analysis */}
-            {(data as any).competitors && (data as any).competitors.length > 0 && (
+            {(data as any).competitors && (Array.isArray((data as any).competitors) ? (data as any).competitors : []).length > 0 && (
                 <div style={{ marginTop: 24, padding: '20px', background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border)' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 16 }}>🛡️ Strategic Gaps & Competitors</p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        {(data as any).competitors.map((c: any, i: number) => (
+                        {(Array.isArray((data as any).competitors) ? (data as any).competitors : []).filter(Boolean).map((c: any, i: number) => (
                             <div key={i} style={{ background: 'var(--bg-primary)', borderRadius: 10, padding: 16, border: '1px solid var(--border)' }}>
-                                <p style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', margin: '0 0 6px 0' }}>{c.name}</p>
+                                <p style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', margin: '0 0 6px 0' }}>{String(c.name || 'Competitor')}</p>
                                 <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>The Gap:</span> {c.gap}
+                                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>The Gap:</span> {String(c.gap || 'N/A')}
                                 </p>
                             </div>
                         ))}
@@ -157,11 +157,11 @@ function PositioningTab({ data }: { data: PositioningResult | null | undefined }
             <div>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.08em' }}>PHASE 3: AUTHORITY PILLARS</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {(data.authority_pillars || []).map((pillar, i) => (
+                    {(Array.isArray(data.authority_pillars) ? data.authority_pillars : []).filter(Boolean).map((pillar, i) => (
                         <div key={i} className="card">
-                            <h4 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>{pillar.pillar}</h4>
-                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}><strong>Psych Hook:</strong> {pillar.psychological_hook}</p>
-                            <p style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}><strong>Proof Required:</strong> {pillar.proof_requirement}</p>
+                            <h4 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>{String(pillar?.pillar || 'Pillar')}</h4>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}><strong>Psych Hook:</strong> {String(pillar?.psychological_hook || 'N/A')}</p>
+                            <p style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}><strong>Proof Required:</strong> {String(pillar?.proof_requirement || 'N/A')}</p>
                         </div>
                     ))}
                 </div>
@@ -169,8 +169,8 @@ function PositioningTab({ data }: { data: PositioningResult | null | undefined }
 
             <div className="card">
                 <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 16, letterSpacing: '0.08em' }}>PHASE 4: CONVERSION PSYCHOLOGY</p>
-                <KvRow label="Elite Headlines" value={<Tags items={data.conversion_psychology?.elite_headlines || []} />} />
-                <KvRow label="Irreversible CTAs" value={<Tags items={data.conversion_psychology?.irreversible_ctas || []} />} />
+                <p><strong>Elite Headlines:</strong> {(Array.isArray(data.conversion_psychology?.elite_headlines) ? data.conversion_psychology?.elite_headlines : []).filter(Boolean).join(' | ') || 'N/A'}</p>
+                <p><strong>Irreversible CTAs:</strong> {(Array.isArray(data.conversion_psychology?.irreversible_ctas) ? data.conversion_psychology?.irreversible_ctas : []).filter(Boolean).join(' | ') || 'N/A'}</p>
             </div>
 
             <div className="card" style={{ borderLeft: '4px solid var(--accent)', background: 'var(--bg-secondary)' }}>
@@ -242,14 +242,14 @@ function ContentAssetsTab({ data }: { data: ContentAssetsResult | null | undefin
             <div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'var(--text-primary)' }}>1. Storytelling Video Scripts</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {data.video_scripts.map((script: any, i: number) => (
+                    {(Array.isArray(data?.video_scripts) ? data?.video_scripts : []).filter(Boolean).map((script: any, i: number) => (
                         <div key={i} className="card" style={{ padding: '20px', borderColor: 'var(--border)' }}>
-                            <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>{script.title}</h4>
-                            <p style={{ fontSize: 13, marginBottom: 8 }}><strong style={{ color: 'var(--accent)' }}>Hook (0-3s):</strong> {script.hook}</p>
-                            <p style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-secondary)' }}><strong>Body:</strong> {script.body}</p>
-                            <p style={{ fontSize: 13, marginBottom: 12, color: 'var(--text-secondary)' }}><strong>Call to Action:</strong> {script.call_to_action}</p>
+                            <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>{String(script?.title || '')}</h4>
+                            <p style={{ fontSize: 13, marginBottom: 8 }}><strong style={{ color: 'var(--accent)' }}>Hook (0-3s):</strong> {String(script?.hook || '')}</p>
+                            <p style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-secondary)' }}><strong>Body:</strong> {String(script?.body || '')}</p>
+                            <p style={{ fontSize: 13, marginBottom: 12, color: 'var(--text-secondary)' }}><strong>Call to Action:</strong> {String(script?.call_to_action || '')}</p>
                             <div style={{ padding: '12px', background: 'var(--bg-hover)', borderRadius: 8 }}>
-                                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}><strong>Visual Direction:</strong> {script.visual_direction}</p>
+                                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}><strong>Visual Direction:</strong> {String(script?.visual_direction || '')}</p>
                             </div>
                         </div>
                     ))}
@@ -259,11 +259,11 @@ function ContentAssetsTab({ data }: { data: ContentAssetsResult | null | undefin
             <div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'var(--text-primary)' }}>2. Short-form UGC Concepts</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {data.ugc_concepts.map((ugc: any, i: number) => (
+                    {(Array.isArray(data?.ugc_concepts) ? data?.ugc_concepts : []).filter(Boolean).map((ugc: any, i: number) => (
                         <div key={i} className="card" style={{ padding: '20px', borderLeft: '4px solid var(--accent)' }}>
-                            <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Creator: <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{ugc.creator_persona}</span></p>
-                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>{ugc.concept_description}</p>
-                            <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-muted)' }}>🎵 {ugc.audio_trending_sound}</span>
+                            <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Creator: <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{String(ugc?.creator_persona || '')}</span></p>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>{String(ugc?.concept_description || '')}</p>
+                            <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-muted)' }}>🎵 {String(ugc?.audio_trending_sound || '')}</span>
                         </div>
                     ))}
                 </div>
@@ -272,13 +272,13 @@ function ContentAssetsTab({ data }: { data: ContentAssetsResult | null | undefin
             <div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'var(--text-primary)' }}>3. Static Graphic Creative Briefs</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {data.static_creative_briefs.map((brief: any, i: number) => (
+                    {(Array.isArray(data?.static_creative_briefs) ? data?.static_creative_briefs : []).filter(Boolean).map((brief: any, i: number) => (
                         <div key={i} className="card" style={{ padding: '20px' }}>
-                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}><strong>Visual Concept:</strong> {brief.visual_concept}</p>
-                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}><strong>Post Copy:</strong> {brief.copy}</p>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}><strong>Visual Concept:</strong> {String(brief?.visual_concept || '')}</p>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}><strong>Post Copy:</strong> {String(brief?.copy || '')}</p>
                             <div style={{ padding: '16px', background: 'var(--bg-card)', border: '1px dashed var(--border)', borderRadius: 8, textAlign: 'center' }}>
                                 <p style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 700 }}>Text Layout on Image</p>
-                                <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{brief.text_overlay}</p>
+                                <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{String(brief?.text_overlay || '')}</p>
                             </div>
                         </div>
                     ))}
@@ -339,7 +339,17 @@ function ContentTab({
     campaigns,
     selectedCampaignId,
     setSelectedCampaignId,
-    onCampaignCreated
+    onCampaignCreated,
+    handleModifyCalendar,
+    modifyingCalendar,
+    calendarInstruction,
+    setCalendarInstruction,
+    showModifyInput,
+    setShowModifyInput,
+    modifyError,
+    updateAssets,
+    setUpdateAssets,
+    modifyProgress = 0,
 }: {
     data: ContentCalendarResult | null | undefined,
     projectName: string,
@@ -347,7 +357,17 @@ function ContentTab({
     campaigns: any[],
     selectedCampaignId: string,
     setSelectedCampaignId: (id: string) => void,
-    onCampaignCreated?: (newId?: string) => void
+    onCampaignCreated?: (newId?: string) => void,
+    handleModifyCalendar: () => Promise<void>,
+    modifyingCalendar: boolean,
+    calendarInstruction: string,
+    setCalendarInstruction: (val: string) => void,
+    showModifyInput: boolean,
+    setShowModifyInput: (val: boolean) => void,
+    modifyError: string,
+    updateAssets: boolean,
+    setUpdateAssets: (val: boolean) => void,
+    modifyProgress?: number;
 }) {
     const [selectedStyle, setSelectedStyle] = useState('style-1');
     const [customColor, setCustomColor] = useState('');
@@ -403,12 +423,14 @@ function ContentTab({
 
     const handleAddToCampaign = async (overrideId?: string) => {
         const targetId = overrideId || selectedCampaignId;
-        if (!targetId && campaigns.length > 0) {
+        const campaignsCount = (campaigns || []).length;
+
+        if (!targetId && campaignsCount > 0) {
             alert('Please select a campaign from the dropdown first.');
             setShowCampaignSelector(true);
             return;
         }
-        if (!targetId && campaigns.length === 0) {
+        if (!targetId && campaignsCount === 0) {
             setShowCampaignSelector(true); // This will show the "Create or Select" prompt
             return;
         }
@@ -605,7 +627,7 @@ function ContentTab({
                     bottomLeftText: bottomLeftText || undefined,
                     footerText: footerText || undefined,
                     labelText: (selectedStyle === 'style-3') ? labelText : undefined,
-                    headlineText: (selectedStyle === 'style-1' || selectedStyle === 'style-2' || selectedStyle === 'style-3') ? (headlineText || undefined) : undefined,
+                    headlineText: headlineText || undefined,
                 })
             });
             const result = await res.json();
@@ -675,7 +697,7 @@ function ContentTab({
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', flex: 1, justifyContent: 'flex-end', minWidth: 300 }}>
-                    {campaigns.length > 0 ? (
+                    {(Array.isArray(campaigns) ? campaigns : []).length > 0 ? (
                         <select
                             className="input"
                             value={selectedCampaignId}
@@ -683,9 +705,9 @@ function ContentTab({
                             style={{ maxWidth: 300, borderRadius: 10, fontSize: 13, background: 'var(--bg-primary)', height: 42 }}
                         >
                             <option value="" disabled>Select a campaign...</option>
-                            {campaigns.map(c => (
+                            {(Array.isArray(campaigns) ? campaigns : []).filter(Boolean).map(c => (
                                 <option key={c.id} value={c.id}>
-                                    Campaign ({new Date(c.created_at).toLocaleDateString()}) — {c.status}
+                                    Campaign ({new Date(c.created_at).toLocaleDateString()}) — {String(c.status || '')}
                                 </option>
                             ))}
                         </select>
@@ -704,7 +726,7 @@ function ContentTab({
                 </div>
             </div>
 
-            {!selectedCampaignId && campaigns.length > 0 && (
+            {!selectedCampaignId && (Array.isArray(campaigns) ? campaigns : []).length > 0 && (
                 <div style={{
                     marginBottom: 24, padding: 16, borderRadius: 12, border: '1px solid #facc1544',
                     background: '#facc1511', color: '#facc15',
@@ -807,6 +829,21 @@ function ContentTab({
                             value={customContent}
                             onChange={e => setCustomContent(e.target.value)}
                             style={{ minHeight: 90, resize: 'vertical', width: '100%', boxSizing: 'border-box', borderRadius: 10, fontSize: 13, lineHeight: 1.6 }}
+                        />
+                    </div>
+
+                    {/* Prominent Headline Input */}
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 8 }}>
+                            Headline / Main Text <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — leave empty for AI to generate)</span>
+                        </label>
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder='e.g. "Ads guy. Content creator." — your exact words'
+                            value={headlineText}
+                            onChange={e => setHeadlineText(e.target.value)}
+                            style={{ borderRadius: 10, fontSize: 13, height: 42 }}
                         />
                     </div>
 
@@ -929,12 +966,7 @@ function ContentTab({
                             gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                             gap: 16
                         }}>
-                            {(selectedStyle === 'style-1' || selectedStyle === 'style-2' || selectedStyle === 'style-3') && (
-                                <div style={{ gridColumn: '1 / -1' }}>
-                                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>Headline Text <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — leave empty for AI to generate)</span></label>
-                                    <input type="text" className="input" placeholder='e.g. "Ads guy. Content creator." — your exact words' value={headlineText} onChange={e => setHeadlineText(e.target.value)} style={{ borderRadius: 8, fontSize: 12 }} />
-                                </div>
-                            )}
+                            {/* Headline removed from here and moved to main section */}
                             <div>
                                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 6 }}>Hair Style</label>
                                 <input type="text" className="input" placeholder="e.g. long straight hair" value={hairStyle} onChange={e => setHairStyle(e.target.value)} style={{ borderRadius: 8, fontSize: 12 }} />
@@ -1089,9 +1121,9 @@ function ContentTab({
 
                                 {showCampaignSelector && (
                                     <div style={{ marginTop: 24, padding: 20, background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--accent-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
-                                        <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>{campaigns.length > 0 ? 'Select Campaign' : 'Create or Select Campaign'}</p>
+                                        <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>{(Array.isArray(campaigns) ? campaigns : []).length > 0 ? 'Select Campaign' : 'Create or Select Campaign'}</p>
 
-                                        {campaigns.length > 0 ? (
+                                        {(Array.isArray(campaigns) ? campaigns : []).length > 0 ? (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                                 <select
                                                     className="input"
@@ -1099,7 +1131,7 @@ function ContentTab({
                                                     onChange={(e) => setSelectedCampaignId(e.target.value)}
                                                     style={{ borderRadius: 8, fontSize: 13 }}
                                                 >
-                                                    {campaigns.map(c => (
+                                                    {(Array.isArray(campaigns) ? campaigns : []).filter(Boolean).map(c => (
                                                         <option key={c.id} value={c.id}>
                                                             Campaign ({new Date(c.created_at).toLocaleDateString()})
                                                         </option>
@@ -1166,39 +1198,129 @@ function ContentTab({
 
             {/* ── Content Calendar ── */}
             <div className="card" style={{ marginBottom: 16, borderColor: 'var(--accent-border)', background: 'var(--accent-subtle)' }}>
-                <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginBottom: 4 }}>MONTHLY THEME</p>
-                <p style={{ fontWeight: 600 }}>{data.theme_of_month}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>MONTHLY THEME</p>
+                    <button
+                        onClick={() => setShowModifyInput(!showModifyInput)}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                        {showModifyInput ? '✕ CANCEL' : '✨ MODIFY'}
+                    </button>
+                </div>
+
+                {showModifyInput ? (
+                    <div style={{ marginTop: 12 }}>
+                        <textarea
+                            className="input"
+                            placeholder="e.g. Focus more on B2B lead generation, make the tone more technical..."
+                            value={calendarInstruction}
+                            onChange={(e) => setCalendarInstruction(e.target.value)}
+                            style={{ width: '100%', height: 80, fontSize: 13, padding: 12, borderRadius: 8, background: 'var(--bg-primary)', border: '1px solid var(--accent-border)' }}
+                        />
+
+                        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input
+                                type="checkbox"
+                                id="updateAssets"
+                                checked={updateAssets}
+                                onChange={e => setUpdateAssets(e.target.checked)}
+                                style={{ width: 16, height: 16, cursor: 'pointer' }}
+                            />
+                            <label htmlFor="updateAssets" style={{ fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                                Also update Creative Assets (Video Scripts, etc.) — <span style={{ color: 'var(--text-muted)' }}>Heavy Generation</span>
+                            </label>
+                        </div>
+                        {modifyError && (
+                            <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 6, fontSize: 12, color: 'var(--error)' }}>
+                                ⚠️ <strong>Critique:</strong> {modifyError}
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                            {modifyingCalendar ? (
+                                <div style={{
+                                    width: '100%',
+                                    marginTop: 10,
+                                    padding: '24px',
+                                    background: 'rgba(124,111,255,0.05)',
+                                    borderRadius: 16,
+                                    border: '1px solid rgba(124,111,255,0.1)',
+                                    backdropFilter: 'blur(10px)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 12
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.01em' }}>
+                                            Deep Strategy Refinement <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(Phase {modifyProgress < 40 ? '1: Intent Analysis' : modifyProgress < 75 ? '2: Strategic Mapping' : '3: Content Generation'})</span>
+                                        </p>
+                                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', fontFamily: 'monospaced' }}>{Math.round(modifyProgress)}%</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', position: 'relative' }}>
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            height: '100%',
+                                            width: `${modifyProgress}%`,
+                                            background: 'linear-gradient(90deg, #7c6fff 0%, #a78bfa 100%)',
+                                            borderRadius: 10,
+                                            transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            boxShadow: '0 0 12px rgba(124,111,255,0.4)'
+                                        }} />
+                                    </div>
+                                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
+                                        Sense-making engine is processing your instructions...
+                                    </p>
+                                </div>
+                            ) : (
+                                <button
+                                    className="btn btn-primary"
+                                    style={{ height: 32, padding: '0 16px', fontSize: 12 }}
+                                    onClick={handleModifyCalendar}
+                                    disabled={!calendarInstruction.trim()}
+                                >
+                                    Regenerate Content Matrix
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <p style={{ fontWeight: 600, margin: 0 }}>{String(data?.theme_of_month || 'Monthly Strategy')}</p>
+                )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {data.entries.map((entry: import('@/types').ContentCalendarEntry, i: number) => (
+                {(Array.isArray(data?.entries) ? data?.entries : []).filter(Boolean).map((entry: any, i: number) => (
                     <div key={i} className="card" style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
                             <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
-                                {entry.day}
+                                {entry?.day || '•'}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                                    <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)', fontSize: 11 }}>{entry.platform}</span>
-                                    <span className="badge" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', fontSize: 11 }}>{entry.content_type}</span>
-                                    {entry.funnel_stage && (
-                                        <span className="badge" style={{ background: 'var(--warning-subtle)', color: 'var(--warning)', fontSize: 11 }}>{entry.funnel_stage}</span>
+                                    <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)', fontSize: 11 }}>{String(entry?.platform || 'General')}</span>
+                                    <span className="badge" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', fontSize: 11 }}>{String(entry?.content_type || 'Post')}</span>
+                                    {entry?.funnel_stage && (
+                                        <span className="badge" style={{ background: 'var(--warning-subtle)', color: 'var(--warning)', fontSize: 11 }}>{String(entry.funnel_stage)}</span>
                                     )}
                                 </div>
 
-                                <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{entry.core_message || entry.topic}</p>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: 13, fontStyle: 'italic', marginBottom: entry.framework_used || entry.cta || entry.why_this_converts ? 12 : 0 }}>&ldquo;{entry.caption_hook}&rdquo;</p>
+                                 <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{String(entry?.core_message || entry?.topic || '')}</p>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: 13, fontStyle: 'italic', marginBottom: entry?.framework_used || entry?.cta || entry?.why_this_converts ? 12 : 0 }}>&ldquo;{String(entry?.caption_hook || '')}&rdquo;</p>
 
-                                {(entry.framework_used || entry.cta || entry.why_this_converts) && (
+                                 {(entry?.framework_used || entry?.cta || entry?.execution_script) && (
                                     <div style={{ background: 'var(--bg-secondary)', padding: 12, borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                        {entry.framework_used && (
-                                            <div><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Framework:</span> {entry.framework_used}</div>
+                                        {entry?.framework_used && (
+                                            <div><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Framework:</span> {String(entry.framework_used)}</div>
                                         )}
-                                        {entry.cta && (
-                                            <div><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>CTA:</span> {entry.cta}</div>
+                                        {entry?.execution_script && (
+                                            <div style={{ marginTop: 4 }}>
+                                                <span style={{ fontWeight: 600, color: 'var(--accent)', display: 'block', marginBottom: 4 }}>Execution Script:</span>
+                                                <div style={{ lineHeight: 1.6, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{String(entry.execution_script)}</div>
+                                            </div>
                                         )}
-                                        {entry.why_this_converts && (
-                                            <div><span style={{ fontWeight: 600, color: 'var(--success)' }}>Why it works:</span> {entry.why_this_converts}</div>
+                                        {entry?.cta && (
+                                            <div style={{ marginTop: 4 }}><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>CTA:</span> {String(entry.cta)}</div>
                                         )}
                                     </div>
                                 )}
@@ -1216,23 +1338,23 @@ function AdsTab({ data }: { data: AdCampaignsResult | null | undefined }) {
     if (!data) return <p style={{ color: 'var(--text-muted)' }}>Not generated yet.</p>;
     return (
         <div>
-            <KvRow label="Objective" value={data.campaign_objective} />
-            <KvRow label="Budget" value={data.budget_recommendation} />
-            <KvRow label="KPIs" value={<Tags items={data.kpis} />} />
+            <KvRow label="Objective" value={String(data.campaign_objective || 'N/A')} />
+            <KvRow label="Budget" value={String(data.budget_recommendation || 'N/A')} />
+            <KvRow label="KPIs" value={<Tags items={Array.isArray(data.kpis) ? data.kpis : []} />} />
             <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {data.variants.map((v: import('@/types').AdVariant, i: number) => (
+                {(Array.isArray(data.variants) ? data.variants : []).filter(Boolean).map((v: import('@/types').AdVariant, i: number) => (
                     <div key={i} className="card">
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                             <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>VARIANT {i + 1}</span>
-                            <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>{v.platform}</span>
+                            <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>{String(v.platform || 'General')}</span>
                         </div>
-                        <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{v.headline}</p>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 10 }}>{v.body_text}</p>
+                        <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{String(v.headline || '')}</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 10 }}>{String(v.body_text || '')}</p>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ display: 'inline-flex', padding: '4px 12px', background: 'var(--accent)', color: '#fff', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-                                {v.cta}
+                                {String(v.cta || 'Learn More')}
                             </span>
-                            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>→ {v.target_audience_segment}</span>
+                            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>→ {String(v.target_audience_segment || 'All')}</span>
                         </div>
                     </div>
                 ))}
@@ -1246,9 +1368,9 @@ function StrategyTab({ analysis, positioning }: { analysis: WebsiteAnalysisOutpu
     const enhancedPositioning = positioning ? {
         ...positioning,
         strategic_blueprint: {
-            icp: (positioning as any).icp,
-            offer_angle: (positioning as any).offer_angle,
-            campaign_objective: (positioning as any).campaign_objective
+            icp: String((positioning as any).icp || (positioning as any).strategic_blueprint?.icp || 'N/A'),
+            offer_angle: String((positioning as any).offer_angle || (positioning as any).strategic_blueprint?.offer_angle || 'N/A'),
+            campaign_objective: String((positioning as any).campaign_objective || (positioning as any).strategic_blueprint?.campaign_objective || 'N/A')
         }
     } : positioning;
 
@@ -1287,6 +1409,12 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
     const [projectCampaigns, setProjectCampaigns] = useState<any[]>([]);
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
+    const [modifyingCalendar, setModifyingCalendar] = useState(false);
+    const [calendarInstruction, setCalendarInstruction] = useState('');
+    const [showModifyInput, setShowModifyInput] = useState(false);
+    const [modifyError, setModifyError] = useState('');
+    const [updateAssets, setUpdateAssets] = useState(false);
+    const [modifyProgress, setModifyProgress] = useState(0);
 
     useEffect(() => {
         if (project.id) {
@@ -1321,7 +1449,8 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
             if (newId) {
                 setSelectedCampaignId(newId);
             } else if ((data.campaigns || []).length > 0 && !selectedCampaignId) {
-                setSelectedCampaignId(data.campaigns[0].id);
+                const firstId = (data.campaigns && data.campaigns[0] && data.campaigns[0].id) ? data.campaigns[0].id : '';
+                if (firstId) setSelectedCampaignId(firstId);
             }
         } catch (err) {
             console.error('Failed to fetch project campaigns', err);
@@ -1358,6 +1487,64 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    async function handleModifyCalendar() {
+        if (!calendarInstruction.trim()) return;
+        setModifyingCalendar(true);
+        setModifyError('');
+        setModifyProgress(0);
+
+        // Simulation logic for smooth Apple-style progress
+        const interval = setInterval(() => {
+            setModifyProgress(prev => {
+                if (prev >= 92) return prev; // Hold at 92 until actual finish
+                const increase = Math.random() * 5;
+                return Math.min(prev + increase, 95);
+            });
+        }, 400);
+
+        try {
+            const res = await fetch('/api/projects/modify-calendar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectId: project.id,
+                    customInstruction: calendarInstruction,
+                    updateAssets: updateAssets
+                }),
+            });
+            const result = await res.json();
+            if (!res.ok) {
+                // If the error is 'vague_prompt', we show the critique nicely
+                if (result.reason === 'vague_prompt') {
+                    setModifyError(result.error);
+                } else {
+                    throw new Error(result.error || 'Modification failed');
+                }
+                return;
+            }
+
+            // Finish the progress
+            setModifyProgress(100);
+            await new Promise(r => setTimeout(r, 600)); // Small delay for the user to see 100%
+
+            // Update local state with new calendar and assets (if updated)
+            setOutputs(prev => ({
+                ...prev,
+                calendar: { calendar_json: result.data.calendar },
+                assets: result.data.assets ? { assets_json: result.data.assets } : prev.assets
+            }));
+            setShowModifyInput(false);
+            setCalendarInstruction('');
+            setUpdateAssets(false);
+        } catch (err: any) {
+            setModifyError(err.message || 'Something went wrong');
+        } finally {
+            clearInterval(interval);
+            setModifyingCalendar(false);
+            setModifyProgress(0);
+        }
+    }
 
     async function startGeneration() {
         setGenerating(true);
@@ -1606,21 +1793,31 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
 
                             {/* Detail Panels */}
                             <div style={{ flex: 1, minWidth: 0, paddingBottom: 64 }}>
-                                {activeTab === 'strategy' && <StrategyTab analysis={outputs.analysis?.analysis_json} positioning={outputs.positioning?.positioning_json} />}
-                                {activeTab === 'funnel' && <FunnelTab data={outputs.funnel?.funnel_json} />}
-                                {activeTab === 'ads' && <AdsTab data={outputs.ads?.campaigns_json} />}
+                                {activeTab === 'strategy' && <StrategyTab analysis={outputs?.analysis?.analysis_json} positioning={outputs?.positioning?.positioning_json} />}
+                                {activeTab === 'funnel' && <FunnelTab data={outputs?.funnel?.funnel_json} />}
+                                {activeTab === 'ads' && <AdsTab data={outputs?.ads?.campaigns_json} />}
                                 {activeTab === 'social' && (
                                     <ContentTab
-                                        data={outputs.calendar?.calendar_json}
+                                        data={outputs?.calendar?.calendar_json}
                                         projectName={project.name}
                                         projectId={project.id}
                                         campaigns={projectCampaigns}
                                         selectedCampaignId={selectedCampaignId}
                                         setSelectedCampaignId={setSelectedCampaignId}
                                         onCampaignCreated={fetchProjectCampaigns}
+                                        handleModifyCalendar={handleModifyCalendar}
+                                        modifyingCalendar={modifyingCalendar}
+                                        calendarInstruction={calendarInstruction}
+                                        setCalendarInstruction={setCalendarInstruction}
+                                        showModifyInput={showModifyInput}
+                                        setShowModifyInput={setShowModifyInput}
+                                        modifyError={modifyError}
+                                        updateAssets={updateAssets}
+                                        setUpdateAssets={setUpdateAssets}
+                                        modifyProgress={modifyProgress}
                                     />
                                 )}
-                                {activeTab === 'content' && <ContentAssetsTab data={outputs.assets?.assets_json} />}
+                                {activeTab === 'content' && <ContentAssetsTab data={outputs?.assets?.assets_json} />}
                             </div>
                         </div>
                     )
@@ -1683,7 +1880,7 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
                                                             background: c.status === 'complete' ? '#34d39922' : '#facc1522',
                                                             color: c.status === 'complete' ? '#34d399' : '#facc15'
                                                         }}>
-                                                            {c.status.toUpperCase()}
+                                                            {(c.status || 'pending').toUpperCase()}
                                                         </span>
                                                     </div>
                                                     <p style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500, margin: '0 0 12px 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>

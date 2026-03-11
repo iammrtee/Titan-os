@@ -125,6 +125,42 @@ Return ONLY valid JSON with this exact structure:
 }`;
 }
 
+// ─── Step 4.5: Deep Analysis (Modification Refinement) ────────────────
+
+export function deepAnalysisPrompt(
+  userInstruction: string,
+  currentPositioning: PositioningResult,
+  currentFunnel: FunnelResult,
+  currentCalendar: ContentCalendarResult
+): string {
+  return `You are a Senior Strategic Analyst at TitanLeap.
+Your Task: Perform a "STRICT CONSTRAINT ANALYSIS" on the user's request.
+
+USER REQUEST: "${userInstruction}"
+
+CRITICAL: 
+1. Identify "NEGATIVE CONSTRAINTS": Did the user say "get rid of X", "stop doing Y", or "less of Z"? These are PRIORITY 1.
+2. Identify "STRUCTURAL SHIFTS": Is the user asking for a different content framework or a pivot in the core value prop?
+
+CURRENT DATA:
+- Core Thesis: ${currentPositioning.positioning_architecture.core_thesis}
+- Theme: ${currentCalendar.theme_of_month}
+
+DEEP ANALYSIS REQUIREMENTS:
+1. Constraint Enforcement: If the user says "get rid of X", your refined brief MUST explicitly tell the generator to omit that field/info.
+2. Sense-Making Pivot: If the request is to "focus more on X", explain the logical 'Why' and 'How' for the next agent.
+3. Logical Cohesion: Ensure the new strategy "Makes More Sense" and isn't just a longer version of the old one.
+
+Return ONLY valid JSON:
+{
+  "is_actionable": boolean,
+  "critique": "string",
+  "refined_strategic_brief": "string - Include EXPLICIT 'DO' and 'DO NOT' sections based on the user request.",
+  "recommended_theme": "string"
+}
+`;
+}
+
 // ─── Step 5: Content Calendar (Titan Growth Engine) ───────────────────
 
 export function contentCalendarPrompt(
@@ -133,9 +169,14 @@ export function contentCalendarPrompt(
   businessName: string,
   niche: string,
   targetAudience: string,
+  customRefinementBrief?: string,
 ): string {
+  const refinementSection = customRefinementBrief
+    ? `\n🚀 CUSTOM REFINEMENT BRIEF (PRIORITY):\n${customRefinementBrief}\n`
+    : '';
+
   return `You are a Head of Content at TitanLeap. 
-Generate a 30-day high-performance content calendar for ${businessName}.
+Generate a 30-day high-performance content calendar for ${businessName}.${refinementSection}
 
 🎯 STRATEGIC CONTEXT:
 Industry: ${niche}
@@ -156,12 +197,12 @@ Return ONLY valid JSON with this exact structure:
       "day": number,
       "platform": "string",
       "content_type": "string",
-      "core_message": "string",
-      "caption_hook": "string",
-      "framework_used": "string",
+      "core_message": "string - The main strategic takeaway",
+      "caption_hook": "string - Pattern-interrupting hook",
+      "framework_used": "string - e.g., Authority, Psych-Gap, Transformation",
+      "execution_script": "string - A dense, framework-driven script or outline that follows the chosen 'framework_used'. DO NOT explain why it works, JUST provide the script.",
       "cta": "string",
-      "funnel_stage": "string",
-      "why_this_converts": "string"
+      "funnel_stage": "string"
     }
   ]
 }

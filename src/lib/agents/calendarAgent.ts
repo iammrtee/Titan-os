@@ -66,7 +66,7 @@ Output ONLY a JSON array of exactly 30 objects:
 Adapt the ASSET POOL content to fit the daily phase. Precision is non-negotiable.`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: 'application/json', temperature: 0.5 },
   });
