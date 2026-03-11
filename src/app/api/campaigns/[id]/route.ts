@@ -90,11 +90,21 @@ export async function GET(
             }
         }
 
+        const finalAssets = assetsRes.data || [];
+        if (finalAssets.length === 0 && campaign.flyer_image_url) {
+            finalAssets.push({
+                id: `primary-${campaign.id}`,
+                asset_url: campaign.flyer_image_url,
+                asset_type: 'flyer',
+                created_at: campaign.created_at
+            });
+        }
+
         return NextResponse.json({
             campaign,
             content: finalContent,
             calendar: finalCalendar,
-            assets: assetsRes.data || [],
+            assets: finalAssets,
             distributionJobs: jobsRes.data || []
         });
     } catch (err: any) {
