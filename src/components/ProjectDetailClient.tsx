@@ -409,8 +409,12 @@ function ContentTab({
             if (result.success) {
                 if (onCampaignCreated) onCampaignCreated(result.campaign.id);
                 setShowCampaignSelector(false);
-                // After creating, we can proceed to add asset
-                await handleAddToCampaign(result.campaign.id);
+                // After creating, we can proceed to add asset ONLY if we have one
+                if (customFlyerUrl) {
+                    await handleAddToCampaign(result.campaign.id);
+                } else {
+                    alert('Campaign created successfully!');
+                }
             } else {
                 alert(result.error || 'Failed to create campaign');
             }
