@@ -66,6 +66,11 @@ class MockQuery {
         return this;
     }
 
+    in(column: string, values: any[]) {
+        this.filters[column] = values;
+        return this;
+    }
+
     order() {
         return this;
     }
