@@ -74,6 +74,10 @@ class MockQuery {
         return Promise.resolve({ data: this.buildSingle(), error: null });
     }
 
+    maybeSingle(): MockResult<any> {
+        return Promise.resolve({ data: this.buildSingle(), error: null });
+    }
+
     then<TResult1 = any, TResult2 = never>(
         onfulfilled?: ((value: { data: any; error: null }) => TResult1 | PromiseLike<TResult1>) | null,
         onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
@@ -151,6 +155,12 @@ function createMockStorage() {
                         error: { message: 'Bypass mode: storage disabled' },
                     };
                 },
+                async remove() {
+                    return { data: null, error: null };
+                },
+                getPublicUrl(path: string) {
+                    return { data: { publicUrl: `https://dev.storage.local/titanleap-assets-v1/${path}` } };
+                }
             };
         },
     };

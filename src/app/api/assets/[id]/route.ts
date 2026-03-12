@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/supabase/server';
+import { createClient, createAdminClient } from '@/supabase/server';
 
 export async function DELETE(
     req: NextRequest,
@@ -14,8 +14,9 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 1. Fetch asset to get URL and verify ownership indirectly via campaign
-        const { data: asset, error: fetchError } = await supabase
+        // 1. Fetch asset using admin client to find its project and owner
+        const adminSupabase = createAdminClient();
+        const { data: asset, error: fetchError } = await adminSupabase
             .from('campaign_assets')
             .select('*, campaigns!inner(projects!inner(user_id))')
             .eq('id', id)
@@ -25,41 +26,29 @@ export async function DELETE(
             return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
         }
 
-        // Check if user owns the project this asset belongs to
+        // Manual Ownership Check
         if (asset.campaigns.projects.user_id !== user.id) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // 2. Extract storage path and bucket from URL
-        // URL format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+        // 2. Storage Cleanup (using Admin client)
         const bucketMatch = asset.asset_url.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
-
+        
         if (bucketMatch) {
             const bucketName = bucketMatch[1];
             const storagePath = bucketMatch[2];
-
-            console.log(`Deleting from bucket ${bucketName}: ${storagePath}`);
-
-            // Delete from Supabase Storage
-            const { error: storageError } = await supabase
-                .storage
-                .from(bucketName)
-                .remove([storagePath]);
-
-            if (storageError) {
-                console.error('Storage deletion error:', storageError);
-            }
+            await adminSupabase.storage.from(bucketName).remove([storagePath]);
         } else {
-            // Fallback for older formats or direct paths
-            const urlParts = asset.asset_url.split('/campaign-assets/');
+            // Check for direct path format
+            const BUCKET_NAME = 'titanleap-assets-v1';
+            const urlParts = asset.asset_url.split(`/${BUCKET_NAME}/`);
             if (urlParts.length > 1) {
-                const storagePath = urlParts[1];
-                await supabase.storage.from('campaign-assets').remove([storagePath]);
+                await adminSupabase.storage.from(BUCKET_NAME).remove([urlParts[1]]);
             }
         }
 
-        // 3. Delete from Database
-        const { error: dbError } = await supabase
+        // 3. Database Deletion (using Admin client)
+        const { error: dbError } = await adminSupabase
             .from('campaign_assets')
             .delete()
             .eq('id', id);

@@ -17,6 +17,20 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing campaignId' }, { status: 400 });
         }
 
+        const campaignIdTrimmed = campaignId.trim();
+
+        // Security Check: Verify user owns the campaign/project before creating a record
+        const { data: campaignOwnership, error: ownershipError } = await supabase
+            .from('campaigns')
+            .select('id, projects!inner(user_id)')
+            .eq('id', campaignIdTrimmed)
+            .single();
+
+        if (ownershipError || !campaignOwnership || (campaignOwnership.projects as any).user_id !== user.id) {
+            console.error('Record creation ownership check failed:', ownershipError);
+            return NextResponse.json({ error: 'Campaign not found or unauthorized' }, { status: 404 });
+        }
+
         const admin = createAdminClient();
 
         // Get Public URL
@@ -26,11 +40,11 @@ export async function POST(req: NextRequest) {
             .from(BUCKET_NAME)
             .getPublicUrl(filePath);
 
-        // Create Asset Record (use user client so RLS applies correctly)
-        const { data: asset, error: assetError } = await supabase
+        // Create Asset Record using Admin client to bypass RLS
+        const { data: asset, error: assetError } = await admin
             .from('campaign_assets')
             .insert({
-                campaign_id: campaignId,
+                campaign_id: campaignIdTrimmed,
                 asset_type: assetType,
                 asset_url: publicUrl,
                 metadata: {
