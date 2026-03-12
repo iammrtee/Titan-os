@@ -10,10 +10,10 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const projectId = searchParams.get('projectId');
 
-        // Optimize query: select only what's needed and use a single join
+        // Simplify query: remove joins to maximize performance
         let query = supabase
             .from('campaigns')
-            .select('id, status, flyer_image_url, created_at, project_id, campaign_assets(asset_url)');
+            .select('id, status, flyer_image_url, created_at, project_id');
 
         if (projectId) {
             query = query.eq('project_id', projectId);
@@ -23,17 +23,7 @@ export async function GET(req: NextRequest) {
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-        // Transform to include a cover image if flyer_image_url is missing
-        const transformedCampaigns = (campaigns || []).map((c: any) => {
-            const assetUrl = Array.isArray(c.campaign_assets) && c.campaign_assets[0]?.asset_url;
-            return {
-                ...c,
-                flyer_image_url: c.flyer_image_url || assetUrl || null,
-                campaign_assets: undefined // Hide the raw array from response
-            };
-        });
-
-        return NextResponse.json({ campaigns: transformedCampaigns });
+        return NextResponse.json({ campaigns: campaigns || [] });
     } catch (err: any) {
         return NextResponse.json({ error: err?.message }, { status: 500 });
     }
