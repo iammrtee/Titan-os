@@ -11,11 +11,15 @@ export async function GET(req: NextRequest) {
         const projectId = searchParams.get('projectId');
 
         // Optimize query: select only what's needed and use a single join
-        const { data: campaigns, error } = await supabase
+        let query = supabase
             .from('campaigns')
-            .select('id, status, flyer_image_url, created_at, project_id, campaign_assets(asset_url)')
-            .match(projectId ? { project_id: projectId } : {})
-            .order('created_at', { ascending: false });
+            .select('id, status, flyer_image_url, created_at, project_id, campaign_assets(asset_url)');
+
+        if (projectId) {
+            query = query.eq('project_id', projectId);
+        }
+
+        const { data: campaigns, error } = await query.order('created_at', { ascending: false });
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

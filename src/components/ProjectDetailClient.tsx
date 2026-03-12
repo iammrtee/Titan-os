@@ -1458,6 +1458,10 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
         setLoadingCampaigns(true);
         try {
             const res = await fetch(`/api/campaigns?projectId=${project.id}`);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ error: 'Unknown server error' }));
+                throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+            }
             const data = await res.json();
             setProjectCampaigns(data.campaigns || []);
 
