@@ -350,6 +350,8 @@ function ContentTab({
     updateAssets,
     setUpdateAssets,
     modifyProgress = 0,
+    handleCreateCampaign,
+    isCreatingCampaign,
 }: {
     data: ContentCalendarResult | null | undefined,
     projectName: string,
@@ -368,6 +370,8 @@ function ContentTab({
     updateAssets: boolean,
     setUpdateAssets: (val: boolean) => void,
     modifyProgress?: number;
+    handleCreateCampaign: (assetUrl?: string) => Promise<void>;
+    isCreatingCampaign: boolean;
 }) {
     const [selectedStyle, setSelectedStyle] = useState('style-1');
     const [customColor, setCustomColor] = useState('');
@@ -398,31 +402,7 @@ function ContentTab({
     const [showCampaignSelector, setShowCampaignSelector] = useState(false);
 
     const handleCreateLightweightCampaign = async () => {
-        setIsAddingToCampaign(true);
-        try {
-            const res = await fetch('/api/campaigns/create-lightweight', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ projectId, name: `Campaign for ${projectName}` })
-            });
-            const result = await res.json();
-            if (result.success) {
-                if (onCampaignCreated) onCampaignCreated(result.campaign.id);
-                setShowCampaignSelector(false);
-                // After creating, we can proceed to add asset ONLY if we have one
-                if (customFlyerUrl) {
-                    await handleAddToCampaign(result.campaign.id);
-                } else {
-                    alert('Campaign created successfully!');
-                }
-            } else {
-                alert(result.error || 'Failed to create campaign');
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setIsAddingToCampaign(false);
-        }
+        await handleCreateCampaign(customFlyerUrl || undefined);
     };
 
     const handleAddToCampaign = async (overrideId?: string) => {
@@ -752,10 +732,10 @@ function ContentTab({
                     <button
                         className="btn btn-primary"
                         onClick={handleCreateLightweightCampaign}
-                        disabled={isAddingToCampaign}
+                        disabled={isCreatingCampaign}
                         style={{ height: 42, padding: '0 20px', fontSize: 13 }}
                     >
-                        {isAddingToCampaign ? 'Creating...' : '+ New Campaign'}
+                        {isCreatingCampaign ? 'Creating...' : '+ New Campaign'}
                     </button>
                 </div>
             </div>
@@ -1450,6 +1430,7 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
     const [updateAssets, setUpdateAssets] = useState(false);
     const [modifyProgress, setModifyProgress] = useState(0);
     const [loadingOutputs, setLoadingOutputs] = useState(false);
+    const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
 
     useEffect(() => {
         if (project.id) {
@@ -1538,27 +1519,56 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
     }, [activeMainTab]);
 
 
-    const handleCreateCampaignFromDashboard = async () => {
-        // Switch to Growth Campaigns and open manual upload or flyer generator
-        setActiveMainTab('strategy');
-        setActiveTab('social');
-        // Smooth scroll to flyer generator section
-        setTimeout(() => {
-            const el = document.getElementById('flyer-generator-section');
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }, 100);
-    };
-
     useEffect(() => {
         if (shouldGenerate && project.status === 'pending') {
             startGeneration();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const handleCreateCampaign = async (attachedAssetUrl?: string) => {
+        setIsCreatingCampaign(true);
+        try {
+            const res = await fetch('/api/campaigns/create-lightweight', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId: project.id, name: `Campaign for ${project.name}` })
+            });
+            const result = await res.json();
+            if (result.success) {
+                // Refresh the list and select the new campaign
+                await fetchProjectCampaigns(result.campaign.id);
+                
+                // If we have an asset to attach (from flyer generator), do it now
+                if (attachedAssetUrl) {
+                    await fetch('/api/campaigns/assets', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            campaignId: result.campaign.id,
+                            assetType: 'flyer',
+                            assetUrl: attachedAssetUrl,
+                            metadata: { autoGenerated: true }
+                        })
+                    });
+                }
+                
+                alert('Campaign created successfully!');
+            } else {
+                alert(result.error || 'Failed to create campaign');
+            }
+        } catch (err) {
+            console.error('Campaign creation error:', err);
+            alert('An unexpected error occurred during campaign creation.');
+        } finally {
+            setIsCreatingCampaign(false);
+        }
+    };
+
+    const handleCreateCampaignFromDashboard = async () => {
+        // Actually create the campaign
+        await handleCreateCampaign();
+    };
 
     async function handleModifyCalendar() {
         if (!calendarInstruction.trim()) return;
@@ -1898,6 +1908,8 @@ export default function ProjectDetailClient({ project: initialProject, outputs: 
                                         selectedCampaignId={selectedCampaignId}
                                         setSelectedCampaignId={setSelectedCampaignId}
                                         onCampaignCreated={fetchProjectCampaigns}
+                                        handleCreateCampaign={handleCreateCampaign}
+                                        isCreatingCampaign={isCreatingCampaign}
                                         handleModifyCalendar={handleModifyCalendar}
                                         modifyingCalendar={modifyingCalendar}
                                         calendarInstruction={calendarInstruction}
